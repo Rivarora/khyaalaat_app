@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithRedirect, getRedirectResult, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,8 @@ import { Header } from '@/components/header';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { EmailAuthForm } from './email-auth-form';
 
 function GoogleIcon() {
   return (
@@ -25,6 +28,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && user) {
@@ -33,54 +37,91 @@ export default function LoginPage() {
   }, [user, loading, router]);
 
   useEffect(() => {
-    getRedirectResult(auth).catch((error) => {
-      console.error('Error getting redirect result:', error);
-    }).finally(() => {
-      setIsSigningIn(false);
-    });
+    const unsubscribe = getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          // User is available in the useAuth hook
+        }
+      })
+      .catch((error) => {
+        console.error('Error getting redirect result:', error);
+        setAuthError(error.message);
+      })
+      .finally(() => {
+        setIsSigningIn(false);
+      });
   }, []);
 
-
-  const handleSignIn = async () => {
+  const handleGoogleSignIn = async () => {
     setIsSigningIn(true);
     const provider = new GoogleAuthProvider();
     await signInWithRedirect(auth, provider);
+  };
+
+  const onAuthSuccess = (user: User) => {
+    router.push('/admin/upload');
+  };
+
+  const onAuthError = (error: string) => {
+    setAuthError(error);
   };
 
   if (loading || isSigningIn) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <p className="ml-4 text-lg">Signing in...</p>
+        <p className="ml-4 text-lg">Loading...</p>
       </div>
     );
   }
 
-  // If not loading and not signing in, show the login button.
-  return (
-    <>
-      <Header />
-      <motion.main
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="container mx-auto px-4 py-8 pt-24"
-      >
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-headline font-black text-primary mb-4">
-              Admin Sign In
-            </h1>
-            <p className="mb-8 text-lg text-muted-foreground">
-              Please sign in to manage your poetry portfolio.
-            </p>
-            <Button onClick={handleSignIn} size="lg" disabled={isSigningIn}>
-              <GoogleIcon />
-              Sign in with Google
-            </Button>
+  if (!user) {
+    return (
+      <>
+        <Header />
+        <motion.main
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="container mx-auto px-4 py-8 pt-24"
+        >
+          <div className="flex items-center justify-center min-h-[70vh]">
+            <div className="w-full max-w-sm">
+              <div className="text-center mb-6">
+                <h1 className="text-4xl md:text-5xl font-headline font-black text-primary mb-2">
+                  Admin Sign In
+                </h1>
+                <p className="text-muted-foreground">
+                  Sign in to manage your poetry portfolio.
+                </p>
+              </div>
+
+              <EmailAuthForm
+                onSuccess={onAuthSuccess}
+                onError={onAuthError}
+                setPending={setIsSigningIn}
+              />
+              
+              {authError && (
+                <p className="text-destructive text-center text-sm mt-4">{authError}</p>
+              )}
+
+              <div className="my-6 flex items-center">
+                <Separator className="flex-1" />
+                <span className="px-4 text-xs text-muted-foreground">OR CONTINUE WITH</span>
+                <Separator className="flex-1" />
+              </div>
+
+              <Button onClick={handleGoogleSignIn} variant="outline" className="w-full" disabled={isSigningIn}>
+                <GoogleIcon />
+                Sign in with Google
+              </Button>
+            </div>
           </div>
-        </div>
-      </motion.main>
-    </>
-  );
+        </motion.main>
+      </>
+    );
+  }
+  
+  return null;
 }
