@@ -4,68 +4,68 @@
 
 @layer base {
   :root {
-    --background: 240 4% 6%; /* Deep Black */
-    --foreground: 46 30% 85%; /* Light Gold/Off-white */
-    --card: 240 4% 10%; /* Slightly lighter black */
-    --card-foreground: 46 30% 85%;
-    --popover: 240 4% 6%;
-    --popover-foreground: 46 30% 85%;
-    --primary: 46 65% 52%; /* Gold */
-    --primary-foreground: 240 4% 10%; /* Dark for text on gold */
-    --secondary: 240 4% 15%; /* Dark gray */
-    --secondary-foreground: 46 30% 85%;
-    --muted: 240 4% 15%;
-    --muted-foreground: 46 30% 65%;
-    --accent: 45 74% 49%; /* Lighter Gold */
-    --accent-foreground: 240 4% 10%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 46 65% 22%; /* Dark Gold Border */
-    --input: 46 65% 22%;
-    --ring: 45 74% 49%;
+    --background: 20 14% 4%;
+    --foreground: 20 5% 94%;
+    --card: 20 14% 6%;
+    --card-foreground: 20 5% 94%;
+    --popover: 20 14% 4%;
+    --popover-foreground: 20 5% 94%;
+    --primary: 13 80% 60%;
+    --primary-foreground: 13 80% 5%;
+    --secondary: 15 6% 12%;
+    --secondary-foreground: 20 5% 80%;
+    --muted: 15 6% 12%;
+    --muted-foreground: 20 5% 60%;
+    --accent: 15 6% 20%;
+    --accent-foreground: 20 5% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 15 6% 12%;
+    --input: 15 6% 12%;
+    --ring: 13 80% 60%;
     --radius: 0.5rem;
   }
   .dark {
-    --background: 240 4% 6%; /* Deep Black */
-    --foreground: 46 30% 85%; /* Light Gold/Off-white */
-    --card: 240 4% 10%; /* Slightly lighter black */
-    --card-foreground: 46 30% 85%;
-    --popover: 240 4% 6%;
-    --popover-foreground: 46 30% 85%;
-    --primary: 46 65% 52%; /* Gold */
-    --primary-foreground: 240 4% 10%; /* Dark for text on gold */
-    --secondary: 240 4% 15%; /* Dark gray */
-    --secondary-foreground: 46 30% 85%;
-    --muted: 240 4% 15%;
-    --muted-foreground: 46 30% 65%;
-    --accent: 45 74% 49%; /* Lighter Gold */
-    --accent-foreground: 240 4% 10%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 46 65% 22%; /* Dark Gold Border */
-    --input: 46 65% 22%;
-    --ring: 45 74% 49%;
+    --background: 20 14% 4%;
+    --foreground: 20 5% 94%;
+    --card: 20 14% 6%;
+    --card-foreground: 20 5% 94%;
+    --popover: 20 14% 4%;
+    --popover-foreground: 20 5% 94%;
+    --primary: 13 80% 60%;
+    --primary-foreground: 13 80% 5%;
+    --secondary: 15 6% 12%;
+    --secondary-foreground: 20 5% 80%;
+    --muted: 15 6% 12%;
+    --muted-foreground: 20 5% 60%;
+    --accent: 15 6% 20%;
+    --accent-foreground: 20 5% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 15 6% 12%;
+    --input: 15 6% 12%;
+    --ring: 13 80% 60%;
   }
   .light {
-    --background: 60 100% 97%; /* Ivory */
-    --foreground: 240 5% 15%; /* Dark Gray */
-    --card: 60 100% 100%; /* White */
-    --card-foreground: 240 5% 15%;
-    --popover: 60 100% 100%;
-    --popover-foreground: 240 5% 15%;
-    --primary: 46 65% 52%; /* Gold */
-    --primary-foreground: 46 100% 10%; /* Dark brown for text on gold */
-    --secondary: 60 25% 94%; /* Lighter gray */
-    --secondary-foreground: 240 5% 25%;
-    --muted: 60 25% 94%;
-    --muted-foreground: 240 5% 45%;
-    --accent: 45 74% 49%; /* Lighter Gold */
-    --accent-foreground: 46 100% 10%;
+    --background: 0 0% 98%;
+    --foreground: 20 14% 4%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 14% 4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14% 4%;
+    --primary: 13 75% 55%;
+    --primary-foreground: 13 75% 5%;
+    --secondary: 0 0% 94%;
+    --secondary-foreground: 20 5% 20%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 20 5% 40%;
+    --accent: 0 0% 90%;
+    --accent-foreground: 20 5% 10%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 60 20% 88%; /* Light Gray Border */
-    --input: 60 20% 88%;
-    --ring: 46 65% 52%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 13 75% 55%;
   }
 }
 

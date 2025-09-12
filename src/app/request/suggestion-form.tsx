@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { sendRequest } from './actions';
 
@@ -75,15 +75,15 @@ export function SuggestionForm() {
   if (isSubmitted) {
     return (
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <Card className="border-primary border-2 text-center">
+        <Card className="border-primary/50 border-2 text-center shadow-lg bg-card/70">
           <CardHeader>
             <CardTitle className="font-headline text-2xl flex items-center justify-center">
-              <CheckCircle className="mr-2 h-6 w-6 text-green-500" />
+              <CheckCircle className="mr-2 h-6 w-6 text-primary" />
               Request Sent!
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-lg">Thank you for your submission. I will get back to you shortly.</p>
+            <p className="text-lg text-muted-foreground">Thank you for your submission. I will get back to you shortly.</p>
             <Button onClick={() => {
               setIsSubmitted(false);
               form.reset();
@@ -98,7 +98,7 @@ export function SuggestionForm() {
 
   return (
     <>
-      <Card className="bg-card/50 border-2 border-border/50 shadow-lg">
+      <Card className="bg-card/50 border-border shadow-lg">
         <CardHeader>
           <CardTitle className="font-headline text-2xl">Your Poem Idea</CardTitle>
         </CardHeader>

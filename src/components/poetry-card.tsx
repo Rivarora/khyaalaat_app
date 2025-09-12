@@ -29,7 +29,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
 
   return (
     <motion.div
-      className="group relative block w-full overflow-hidden rounded-lg break-inside-avoid"
+      className="group relative block w-full overflow-hidden rounded-lg break-inside-avoid shadow-lg"
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -43,25 +43,25 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
         className="object-cover w-full h-auto"
         data-ai-hint={poetry.image.imageHint}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
-      <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-        <h3 className="text-xl font-headline font-bold text-primary-foreground drop-shadow-md">
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+        <h3 className="text-2xl font-headline font-bold text-white drop-shadow-lg">
           {poetry.title}
         </h3>
-        <div className="flex justify-between items-center mt-2">
-          <p className="text-sm font-semibold bg-primary/80 text-primary-foreground px-2 py-1 rounded-full">
+        <div className="flex justify-between items-center mt-3">
+          <p className="text-sm font-semibold bg-primary/90 text-primary-foreground px-3 py-1 rounded-full backdrop-blur-sm">
             {poetry.genre}
           </p>
           <Button
             variant="ghost"
             size="sm"
             onClick={handleLike}
-            className="text-primary-foreground hover:bg-white/20 hover:text-white"
+            className="text-white hover:bg-white/20 hover:text-white rounded-full"
           >
             <Heart
               className={cn(
                 'mr-2 h-5 w-5 transition-all',
-                isLiked ? 'fill-red-500 text-red-500' : 'fill-transparent'
+                isLiked ? 'fill-red-500 text-red-500' : 'fill-white'
               )}
             />
             {likes}
