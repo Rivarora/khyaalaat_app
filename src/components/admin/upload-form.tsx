@@ -1,6 +1,6 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState, useFormStatus } from 'react-dom';
 import { useEffect, useRef } from 'react';
 import { UploadCloud } from 'lucide-react';
 
@@ -31,7 +31,7 @@ function SubmitButton() {
 
 export function UploadForm() {
   const initialState = { message: '', errors: {} };
-  const [state, dispatch] = useFormState(uploadPoetry, initialState);
+  const [state, dispatch] = useActionState(uploadPoetry, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
 
