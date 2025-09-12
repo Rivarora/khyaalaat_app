@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { Footer } from '@/components/footer';
 import { ParticleProvider } from '@/components/providers/particle-provider';
 import { AuthProvider } from '@/components/providers/auth-provider';
+import { MobileNav } from '@/components/mobile-nav';
 
 export const metadata: Metadata = {
   title: 'Khyaalaat - A Poetry Portfolio',
@@ -36,8 +37,9 @@ export default function RootLayout({
         >
           <AuthProvider>
             <ParticleProvider>
-              <div className="flex-grow">{children}</div>
+              <div className="flex-grow pb-20 md:pb-0">{children}</div>
               <Toaster />
+              <MobileNav />
               <Footer />
             </ParticleProvider>
           </AuthProvider>
