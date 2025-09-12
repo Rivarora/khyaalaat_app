@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { Footer } from '@/components/footer';
 import { ParticleProvider } from '@/components/providers/particle-provider';
+import { AuthProvider } from '@/components/providers/auth-provider';
 
 export const metadata: Metadata = {
   title: 'Khyaalaat - A Poetry Portfolio',
@@ -33,11 +34,13 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <ParticleProvider>
-            <div className="flex-grow">{children}</div>
-            <Toaster />
-            <Footer />
-          </ParticleProvider>
+          <AuthProvider>
+            <ParticleProvider>
+              <div className="flex-grow">{children}</div>
+              <Toaster />
+              <Footer />
+            </ParticleProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

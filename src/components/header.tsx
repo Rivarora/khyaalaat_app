@@ -1,6 +1,37 @@
+'use client'
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/components/providers/auth-provider';
+import { auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
+
+function AuthButton() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/');
+  };
+
+  if (loading) return <div className="h-10 w-24 rounded-md bg-muted animate-pulse" />;
+
+  if (user) {
+    return (
+      <Button onClick={handleLogout} variant="ghost">
+        Logout
+      </Button>
+    );
+  }
+
+  return (
+    <Button asChild>
+      <Link href="/login">Login</Link>
+    </Button>
+  );
+}
 
 export function Header() {
   return (
@@ -21,6 +52,7 @@ export function Header() {
           </Button>
         </nav>
         <div className="flex items-center gap-4">
+          <AuthButton />
           <ThemeToggle />
         </div>
       </div>

@@ -2,8 +2,9 @@
 import { Header } from '@/components/header';
 import { UploadForm } from '@/components/admin/upload-form';
 import { motion } from 'framer-motion';
+import withAuth from '@/components/with-auth';
 
-export default function AdminUploadPage() {
+function AdminUploadPage() {
   return (
     <>
       <Header />
@@ -28,3 +29,5 @@ export default function AdminUploadPage() {
     </>
   );
 }
+
+export default withAuth(AdminUploadPage);
