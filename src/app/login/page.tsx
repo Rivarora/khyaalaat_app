@@ -1,13 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/header';
 import { motion } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
 function GoogleIcon() {
   return (
@@ -23,23 +24,58 @@ function GoogleIcon() {
 export default function LoginPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
-
-  const handleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-      router.push('/admin/upload');
-    } catch (error) {
-      console.error('Error signing in with Google:', error);
-    }
-  };
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   useEffect(() => {
+    // If the user is already logged in, redirect them.
     if (!loading && user) {
       router.push('/admin/upload');
+      return;
+    }
+
+    // Check for redirect result when the component mounts.
+    const checkRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          // This will trigger the onAuthStateChanged listener and redirect.
+          setIsSigningIn(false);
+          router.push('/admin/upload');
+        }
+      } catch (error) {
+        console.error('Error getting redirect result:', error);
+        setIsSigningIn(false);
+      }
+    };
+
+    // Only check for redirect result if not loading and no user.
+    if (!loading && !user) {
+        checkRedirectResult();
     }
   }, [user, loading, router]);
 
+
+  const handleSignIn = async () => {
+    setIsSigningIn(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithRedirect(auth, provider);
+      // The page will redirect, so no need to handle success here.
+    } catch (error) {
+      console.error('Error signing in with Google:', error);
+      setIsSigningIn(false);
+    }
+  };
+
+
+  if (loading || user || isSigningIn) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="ml-4 text-lg">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -58,8 +94,12 @@ export default function LoginPage() {
             <p className="mb-8 text-lg text-muted-foreground">
               Please sign in to manage your poetry portfolio.
             </p>
-            <Button onClick={handleSignIn} size="lg">
-              <GoogleIcon />
+            <Button onClick={handleSignIn} size="lg" disabled={isSigningIn}>
+              {isSigningIn ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <GoogleIcon />
+              )}
               Sign in with Google
             </Button>
           </div>
