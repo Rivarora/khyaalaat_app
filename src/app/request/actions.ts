@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { addRequest, updateRequestStatus } from '@/lib/requests';
+import { addRequest, updateRequestStatus, deleteRequestById } from '@/lib/requests';
 import { revalidatePath } from 'next/cache';
 
 const formSchema = z.object({
@@ -55,5 +55,10 @@ export async function sendRequest(
 
 export async function toggleRequestCompleted(id: string, completed: boolean) {
   await updateRequestStatus(id, completed);
+  revalidatePath('/requests');
+}
+
+export async function deleteRequest(id: string) {
+  await deleteRequestById(id);
   revalidatePath('/requests');
 }

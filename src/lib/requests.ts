@@ -43,3 +43,9 @@ export async function updateRequestStatus(id: string, completed: boolean): Promi
   );
   await writeRequestData(updatedRequests);
 }
+
+export async function deleteRequestById(id: string): Promise<void> {
+  let requests = await readRequestData();
+  requests = requests.filter(req => req.id !== id);
+  await writeRequestData(requests);
+}

@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { CompletedCheckbox } from './completed-checkbox';
 import { cn } from '@/lib/utils';
+import { DeleteRequestButton } from './delete-request-button';
 
 export default async function RequestsPage() {
   const requests = await getRequests();
@@ -40,6 +41,7 @@ export default async function RequestsPage() {
                   <TableHead>Genre</TableHead>
                   <TableHead>Mood</TableHead>
                   <TableHead className="text-right">Date</TableHead>
+                  <TableHead className="w-[50px]">Delete</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -58,11 +60,14 @@ export default async function RequestsPage() {
                       <TableCell className="text-right">
                         {format(new Date(request.createdAt), "MMM d, yyyy")}
                       </TableCell>
+                      <TableCell>
+                        <DeleteRequestButton requestId={request.id} />
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell colSpan={7} className="h-24 text-center">
                       No requests yet.
                     </TableCell>
                   </TableRow>
