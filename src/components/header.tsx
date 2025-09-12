@@ -19,9 +19,6 @@ export function Header() {
            <Button variant="ghost" asChild>
             <Link href="/requests">View Requests</Link>
           </Button>
-          <Button variant="ghost" asChild>
-            <Link href="/admin/upload">Admin</Link>
-          </Button>
         </nav>
         <div className="flex items-center gap-4">
           <ThemeToggle />
