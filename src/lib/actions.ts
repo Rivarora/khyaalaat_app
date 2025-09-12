@@ -10,6 +10,7 @@ import type { Poetry } from './definitions';
 const uploadSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters.'),
   caption: z.string().optional(),
+  poem: z.string().min(10, 'Full poem must be at least 10 characters.'),
   genre: z.enum(['Love', 'Sad', 'Motivational', 'Nature', 'Other']),
   mood: z.string().optional(),
   tags: z.string().optional(),
@@ -19,6 +20,7 @@ export async function uploadPoetry(prevState: any, formData: FormData) {
   const validatedFields = uploadSchema.safeParse({
     title: formData.get('title'),
     caption: formData.get('caption'),
+    poem: formData.get('poem'),
     genre: formData.get('genre'),
     mood: formData.get('mood'),
     tags: formData.get('tags'),
@@ -31,7 +33,7 @@ export async function uploadPoetry(prevState: any, formData: FormData) {
     };
   }
 
-  const { title, genre } = validatedFields.data;
+  const { title, genre, caption, poem } = validatedFields.data;
 
   const image = formData.get('image') as File;
   if (!image || image.size === 0) {
@@ -56,6 +58,8 @@ export async function uploadPoetry(prevState: any, formData: FormData) {
     id: Date.now().toString(),
     title,
     genre,
+    caption,
+    poem,
     image: {
       id: Date.now().toString(),
       imageUrl: imagePath,

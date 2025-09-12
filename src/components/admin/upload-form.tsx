@@ -72,8 +72,14 @@ export function UploadForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="caption">Caption (Optional)</Label>
-            <Textarea id="caption" name="caption" placeholder="A short caption or excerpt..." />
+            <Label htmlFor="caption">Short Caption (Optional Preview)</Label>
+            <Textarea id="caption" name="caption" placeholder="A short caption or excerpt for the card..." />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="poem">Full Poem</Label>
+            <Textarea id="poem" name="poem" placeholder="Enter the full poem text here." required className="min-h-[150px]" />
+            {state?.errors?.poem && <p className="text-sm text-destructive">{state.errors.poem}</p>}
           </div>
           
           <div className="space-y-2">
