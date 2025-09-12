@@ -1,21 +1,10 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { useState } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
+import { useEffect, useRef } from 'react';
 import { UploadCloud } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -27,43 +16,40 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { Label } from '@/components/ui/label';
+import { uploadPoetry } from '@/lib/actions';
 
-const uploadSchema = z.object({
-  title: z.string().min(2, 'Title must be at least 2 characters.'),
-  caption: z.string().optional(),
-  genre: z.enum(['Love', 'Sad', 'Motivational', 'Nature', 'Other']),
-  mood: z.string().optional(),
-  tags: z.string().optional(),
-  image: z.any().refine((files) => files?.length === 1, 'Image is required.'),
-});
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending} className="w-full" size="lg">
+      <UploadCloud className="mr-2 h-4 w-4" />
+      {pending ? 'Uploading...' : 'Upload Poetry'}
+    </Button>
+  );
+}
 
 export function UploadForm() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const initialState = { message: '', errors: {} };
+  const [state, dispatch] = useFormState(uploadPoetry, initialState);
   const { toast } = useToast();
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const form = useForm<z.infer<typeof uploadSchema>>({
-    resolver: zodResolver(uploadSchema),
-    defaultValues: {
-      title: '',
-      caption: '',
-      mood: '',
-      tags: '',
-    },
-  });
-
-  function onSubmit(values: z.infer<typeof uploadSchema>) {
-    setIsSubmitting(true);
-    console.log(values);
-    // In a real app, you would handle file upload to Firebase Storage here.
-    setTimeout(() => {
+  useEffect(() => {
+    if (state?.message?.startsWith('Error')) {
+      toast({
+        title: 'Upload Failed',
+        description: state.message,
+        variant: 'destructive',
+      });
+    } else if (state?.message) {
       toast({
         title: 'Upload Successful',
-        description: `Poetry "${values.title}" has been uploaded.`,
+        description: state.message,
       });
-      form.reset();
-      setIsSubmitting(false);
-    }, 1500);
-  }
+      formRef.current?.reset();
+    }
+  }, [state, toast]);
 
   return (
     <Card>
@@ -71,108 +57,54 @@ export function UploadForm() {
         <CardTitle className="font-headline text-2xl">Upload New Poetry</CardTitle>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="The Whispering Wind" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="image"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Poetry Image</FormLabel>
-                  <FormControl>
-                    <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
-                  </FormControl>
-                  <FormDescription>
-                    Upload the image file for the poetry.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="caption"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Caption (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="A short caption or excerpt..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="genre"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Genre</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a genre" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Love">Love</SelectItem>
-                      <SelectItem value="Sad">Sad</SelectItem>
-                      <SelectItem value="Motivational">Motivational</SelectItem>
-                      <SelectItem value="Nature">Nature</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="mood"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mood (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Hopeful" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="tags"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tags (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., reflection, life, journey" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        <form ref={formRef} action={dispatch} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <Input id="title" name="title" placeholder="The Whispering Wind" required />
+            {state?.errors?.title && <p className="text-sm text-destructive">{state.errors.title}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="image">Poetry Image</Label>
+            <Input id="image" name="image" type="file" accept="image/*" required />
+            {state?.errors?.image && <p className="text-sm text-destructive">{state.errors.image}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="caption">Caption (Optional)</Label>
+            <Textarea id="caption" name="caption" placeholder="A short caption or excerpt..." />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="genre">Genre</Label>
+            <Select name="genre" required>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a genre" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Love">Love</SelectItem>
+                <SelectItem value="Sad">Sad</SelectItem>
+                <SelectItem value="Motivational">Motivational</SelectItem>
+                <SelectItem value="Nature">Nature</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+             {state?.errors?.genre && <p className="text-sm text-destructive">{state.errors.genre}</p>}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="mood">Mood (Optional)</Label>
+              <Input id="mood" name="mood" placeholder="e.g., Hopeful" />
             </div>
-            <Button type="submit" disabled={isSubmitting} className="w-full" size="lg">
-              <UploadCloud className="mr-2 h-4 w-4" />
-              {isSubmitting ? 'Uploading...' : 'Upload Poetry'}
-            </Button>
-          </form>
-        </Form>
+            <div className="space-y-2">
+              <Label htmlFor="tags">Tags (Optional)</Label>
+              <Input id="tags" name="tags" placeholder="e.g., reflection, life, journey" />
+            </div>
+          </div>
+          
+          <SubmitButton />
+        </form>
       </CardContent>
     </Card>
   );

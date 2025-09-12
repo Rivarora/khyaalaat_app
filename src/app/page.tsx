@@ -1,9 +1,10 @@
 import { Header } from '@/components/header';
 import { PoetryCard } from '@/components/poetry-card';
 import { SplashScreen } from '@/components/splash-screen';
-import { poetryData } from '@/lib/data';
+import { getPoetryData } from '@/lib/data';
 
-export default function Home() {
+export default async function Home() {
+  const poetryData = await getPoetryData();
   return (
     <>
       <SplashScreen />
