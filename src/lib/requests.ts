@@ -7,7 +7,9 @@ const dataFilePath = path.join(process.cwd(), 'src', 'lib', 'requests.json');
 async function readRequestData(): Promise<PoemRequest[]> {
   try {
     const fileContent = await fs.readFile(dataFilePath, 'utf-8');
-    return JSON.parse(fileContent);
+    const data = JSON.parse(fileContent);
+    // Ensure all requests have a 'completed' field
+    return data.map((req: any) => ({ ...req, completed: req.completed ?? false }));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       await fs.writeFile(dataFilePath, JSON.stringify([]));
@@ -16,6 +18,10 @@ async function readRequestData(): Promise<PoemRequest[]> {
     console.error('Error reading request data:', error);
     return [];
   }
+}
+
+async function writeRequestData(data: PoemRequest[]): Promise<void> {
+  await fs.writeFile(dataFilePath, JSON.stringify(data, null, 2));
 }
 
 export async function getRequests(): Promise<PoemRequest[]> {
@@ -27,5 +33,13 @@ export async function getRequests(): Promise<PoemRequest[]> {
 export async function addRequest(request: PoemRequest) {
   const currentData = await readRequestData();
   currentData.unshift(request);
-  await fs.writeFile(dataFilePath, JSON.stringify(currentData, null, 2));
+  await writeRequestData(currentData);
+}
+
+export async function updateRequestStatus(id: string, completed: boolean): Promise<void> {
+  const requests = await readRequestData();
+  const updatedRequests = requests.map(req => 
+    req.id === id ? { ...req, completed } : req
+  );
+  await writeRequestData(updatedRequests);
 }

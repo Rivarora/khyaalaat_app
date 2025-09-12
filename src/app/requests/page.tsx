@@ -3,7 +3,6 @@ import { getRequests } from '@/lib/requests';
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -11,6 +10,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { CompletedCheckbox } from './completed-checkbox';
+import { cn } from '@/lib/utils';
 
 export default async function RequestsPage() {
   const requests = await getRequests();
@@ -33,6 +34,7 @@ export default async function RequestsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[50px]">Done</TableHead>
                   <TableHead className="w-[150px]">Requester</TableHead>
                   <TableHead>Topic</TableHead>
                   <TableHead>Genre</TableHead>
@@ -43,11 +45,14 @@ export default async function RequestsPage() {
               <TableBody>
                 {requests.length > 0 ? (
                   requests.map((request) => (
-                    <TableRow key={request.id}>
+                    <TableRow key={request.id} className={cn(request.completed && 'bg-muted/50 text-muted-foreground')}>
+                      <TableCell>
+                        <CompletedCheckbox requestId={request.id} isCompleted={request.completed} />
+                      </TableCell>
                       <TableCell className="font-medium">{request.name}</TableCell>
                       <TableCell>{request.topic}</TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{request.genre}</Badge>
+                        <Badge variant={request.completed ? 'outline' : 'secondary'}>{request.genre}</Badge>
                       </TableCell>
                        <TableCell>{request.mood}</TableCell>
                       <TableCell className="text-right">
@@ -57,7 +62,7 @@ export default async function RequestsPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={6} className="h-24 text-center">
                       No requests yet.
                     </TableCell>
                   </TableRow>

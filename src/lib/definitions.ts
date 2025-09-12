@@ -16,4 +16,5 @@ export type PoemRequest = {
   mood: string;
   description: string;
   createdAt: string;
+  completed: boolean;
 };

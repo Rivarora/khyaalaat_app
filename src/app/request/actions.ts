@@ -1,7 +1,8 @@
 'use server';
 
 import { z } from 'zod';
-import { addRequest } from '@/lib/requests';
+import { addRequest, updateRequestStatus } from '@/lib/requests';
+import { revalidatePath } from 'next/cache';
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -40,6 +41,7 @@ export async function sendRequest(
       id: Date.now().toString(),
       ...validatedValues.data,
       createdAt: new Date().toISOString(),
+      completed: false,
     };
     
     await addRequest(newRequest);
@@ -49,4 +51,9 @@ export async function sendRequest(
     console.error('Error sending request:', error);
     return { success: false, error: 'Failed to save request. Please try again.' };
   }
+}
+
+export async function toggleRequestCompleted(id: string, completed: boolean) {
+  await updateRequestStatus(id, completed);
+  revalidatePath('/requests');
 }
