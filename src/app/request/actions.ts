@@ -1,10 +1,5 @@
 'use server';
 
-import {
-  generatePoetryTopicSuggestions,
-  GeneratePoetryTopicSuggestionsInput,
-  GeneratePoetryTopicSuggestionsOutput,
-} from '@/ai/flows/generate-poetry-topic-suggestions';
 import { z } from 'zod';
 
 const formSchema = z.object({
@@ -14,14 +9,15 @@ const formSchema = z.object({
   description: z.string(),
 });
 
+type PoemRequest = z.infer<typeof formSchema>;
+
 type ActionResult = {
   success: boolean;
-  data?: GeneratePoetryTopicSuggestionsOutput;
   error?: string;
 };
 
-export async function getSuggestions(
-  values: GeneratePoetryTopicSuggestionsInput
+export async function sendRequest(
+  values: PoemRequest
 ): Promise<ActionResult> {
   const validatedValues = formSchema.safeParse(values);
 
@@ -30,10 +26,17 @@ export async function getSuggestions(
   }
 
   try {
-    const result = await generatePoetryTopicSuggestions(validatedValues.data);
-    return { success: true, data: result };
+    // In a real application, you would send this data to a backend,
+    // save it to a database, or send an email.
+    // For now, we'll just log it to the server console.
+    console.log('New poem request received:', validatedValues.data);
+    
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    return { success: true };
   } catch (error) {
-    console.error('Error generating suggestions:', error);
-    return { success: false, error: 'Failed to generate suggestions. Please try again.' };
+    console.error('Error sending request:', error);
+    return { success: false, error: 'Failed to send request. Please try again.' };
   }
 }

@@ -12,7 +12,7 @@ export default function RequestPage() {
               Request a Poem
             </h1>
             <p className="mt-4 text-lg text-muted-foreground">
-              Have an idea? Let our creative AI help you shape it.
+              Have a specific idea for a poem? Fill out the form below to send your request.
             </p>
           </div>
           <SuggestionForm />

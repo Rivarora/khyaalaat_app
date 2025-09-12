@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useState, useTransition } from 'react';
-import { Wand2, Loader2 } from 'lucide-react';
+import { Send, Loader2, CheckCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -26,9 +26,9 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getSuggestions } from './actions';
-import { useToast } from '@/hooks/use-toast';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
+import { sendRequest } from './actions';
 
 const formSchema = z.object({
   topic: z.string().min(2, {
@@ -43,13 +43,9 @@ const formSchema = z.object({
   }),
 });
 
-type Suggestions = {
-  suggestions: string[];
-};
-
 export function SuggestionForm() {
   const [isPending, startTransition] = useTransition();
-  const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -62,11 +58,10 @@ export function SuggestionForm() {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    setSuggestions(null);
     startTransition(async () => {
-      const result = await getSuggestions(values);
-      if (result.success && result.data) {
-        setSuggestions(result.data);
+      const result = await sendRequest(values);
+      if (result.success) {
+        setIsSubmitted(true);
       } else {
         toast({
           variant: 'destructive',
@@ -77,11 +72,35 @@ export function SuggestionForm() {
     });
   }
 
+  if (isSubmitted) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        <Card className="border-primary border-2 text-center">
+          <CardHeader>
+            <CardTitle className="font-headline text-2xl flex items-center justify-center">
+              <CheckCircle className="mr-2 h-6 w-6 text-green-500" />
+              Request Sent!
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg">Thank you for your submission. I will get back to you shortly.</p>
+            <Button onClick={() => {
+              setIsSubmitted(false);
+              form.reset();
+            }} className="mt-6">
+              Submit another request
+            </Button>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
+
   return (
     <>
       <Card className="bg-card/50 border-2 border-border/50 shadow-lg">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">Describe Your Vision</CardTitle>
+          <CardTitle className="font-headline text-2xl">Your Poem Idea</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -159,72 +178,14 @@ export function SuggestionForm() {
                 {isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <Wand2 className="mr-2 h-4 w-4" />
+                  <Send className="mr-2 h-4 w-4" />
                 )}
-                Generate Suggestions
+                Send Request
               </Button>
             </form>
           </Form>
         </CardContent>
       </Card>
-
-      <AnimatePresence>
-        {isPending && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-8"
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-headline text-2xl flex items-center">
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
-                  Generating Ideas...
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="h-4 bg-muted-foreground/10 rounded-full w-3/4 animate-pulse"></div>
-                <div className="h-4 bg-muted-foreground/10 rounded-full w-1/2 animate-pulse"></div>
-                <div className="h-4 bg-muted-foreground/10 rounded-full w-5/6 animate-pulse"></div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {suggestions && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-8"
-          >
-            <Card className="border-primary border-2">
-              <CardHeader>
-                <CardTitle className="font-headline text-2xl flex items-center">
-                  <Wand2 className="mr-2 h-6 w-6 text-primary" />
-                  Here are some creative directions:
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="list-disc list-inside space-y-2 text-lg">
-                  {suggestions.suggestions.map((s, i) => (
-                    <motion.li
-                      key={i}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.15 }}
-                    >
-                      {s}
-                    </motion.li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </>
   );
 }
