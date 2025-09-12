@@ -27,27 +27,32 @@ export default function LoginPage() {
   const [isSigningIn, setIsSigningIn] = useState(true);
 
   useEffect(() => {
+    // If the user is already authenticated, redirect them away from the login page.
     if (!loading && user) {
       router.push('/admin/upload');
       return;
     }
 
-    // This flag indicates that we are waiting for a redirect result.
-    // getRedirectResult should only be called once on page load.
+    // When the page loads, check if it's the result of a redirect from Google.
+    // This should only run once, and only if we aren't already loading a user.
     if (!loading && !user) {
         getRedirectResult(auth)
           .then((result) => {
             if (result) {
-              // User signed in. The onAuthStateChanged listener will handle the redirect.
-              // No need to set isSigningIn to false here as the page will redirect.
+              // User has just signed in. The `onAuthStateChanged` listener in AuthProvider
+              // will detect the new user and this component will re-render.
+              // We'll be redirected by the effect hook above.
+              // No need to set state here, as a redirect is imminent.
             } else {
-              // No redirect result, so the user is not signing in via redirect.
-              // Allow them to click the sign-in button.
+              // No redirect result was found. This means the user has landed on the
+              // login page without coming from Google. We can allow them to click the button.
               setIsSigningIn(false);
             }
           })
           .catch((error) => {
-            console.error('Error getting redirect result:', error);
+            // Handle errors from getRedirectResult, e.g., auth/unauthorized-domain
+            console.error('Error during sign-in redirect:', error);
+            // Allow user to try again.
             setIsSigningIn(false);
           });
     }
@@ -58,23 +63,27 @@ export default function LoginPage() {
     setIsSigningIn(true);
     const provider = new GoogleAuthProvider();
     try {
+      // This will navigate away from the current page.
       await signInWithRedirect(auth, provider);
-      // The page will redirect, so no need to handle success here.
     } catch (error) {
-      console.error('Error signing in with Google:', error);
+      // This catch block might not even be reached if the redirect is successful,
+      // but it's good practice to have it.
+      console.error('Error starting sign-in with redirect:', error);
       setIsSigningIn(false);
     }
   };
 
+  // Show a loading indicator while checking auth status or during the sign-in process.
   if (loading || isSigningIn) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <p className="ml-4 text-lg">Loading...</p>
+        <p className="ml-4 text-lg">Signing in...</p>
       </div>
     );
   }
 
+  // If not loading and not signing in, show the login button.
   return (
     <>
       <Header />
