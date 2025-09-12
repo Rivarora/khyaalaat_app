@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MessageCircle, Send, Share2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -97,6 +97,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
       transition={{ duration: 0.5, delay: index * 0.1 }}
       exit={{ opacity: 0, y: -20 }}
       layout
+      whileHover={{ y: -5 }}
     >
       <motion.div whileHover={{ scale: 1.02 }} className="relative">
         <Image
@@ -209,5 +210,3 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
     </motion.div>
   );
 }
-
-import { AnimatePresence } from 'framer-motion';
