@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MessageCircle, Send, Share2, Trash2 } from 'lucide-react';
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 
 import type { Poetry } from '@/lib/definitions';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,7 @@ type PoetryCardProps = {
 
 export function PoetryCard({ poetry, index }: PoetryCardProps) {
   const [isLiked, setIsLiked] = useState(false);
+  const [likes, setLikes] = useState(poetry.likes);
   const [isDeleted, setIsDeleted] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
@@ -28,10 +29,42 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
 
   const { toast } = useToast();
 
+  useEffect(() => {
+    const likedPoems = JSON.parse(localStorage.getItem('likedPoems') || '[]');
+    setIsLiked(likedPoems.includes(poetry.id));
+  }, [poetry.id]);
+
   const handleLike = () => {
     startTransition(async () => {
-      setIsLiked(!isLiked);
-      await likePoetry(poetry.id, !isLiked);
+      const likedPoems = JSON.parse(localStorage.getItem('likedPoems') || '[]');
+      const newIsLiked = !isLiked;
+      
+      setIsLiked(newIsLiked);
+      setLikes(newIsLiked ? likes + 1 : likes - 1);
+
+      if (newIsLiked) {
+        localStorage.setItem('likedPoems', JSON.stringify([...likedPoems, poetry.id]));
+      } else {
+        localStorage.setItem('likedPoems', JSON.stringify(likedPoems.filter((id: string) => id !== poetry.id)));
+      }
+
+      try {
+        await likePoetry(poetry.id, newIsLiked);
+      } catch (error) {
+        // Revert UI changes on error
+        setIsLiked(!newIsLiked);
+        setLikes(newIsLiked ? likes - 1 : likes + 1);
+        const originalLikedPoems = newIsLiked 
+          ? likedPoems.filter((id: string) => id !== poetry.id)
+          : [...likedPoems, poetry.id];
+        localStorage.setItem('likedPoems', JSON.stringify(originalLikedPoems));
+        
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to update like status.',
+        });
+      }
     });
   };
 
@@ -173,7 +206,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                     isLiked ? 'fill-red-500 text-red-500' : 'fill-white'
                   )}
                 />
-                {poetry.likes + (isLiked ? 1 : 0)}
+                {likes}
               </Button>
             </motion.div>
           </div>
