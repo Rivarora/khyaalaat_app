@@ -1,15 +1,25 @@
 'use server';
 
 import { z } from 'zod';
+import { addRequest } from '@/lib/requests';
 
 const formSchema = z.object({
-  topic: z.string(),
-  genre: z.string(),
-  mood: z.string(),
-  description: z.string(),
+  name: z.string().min(2, {
+    message: 'Name must be at least 2 characters.',
+  }),
+  topic: z.string().min(2, {
+    message: 'Topic must be at least 2 characters.',
+  }),
+  genre: z.enum(['Love', 'Sad', 'Motivational', 'Nature']),
+  mood: z.string().min(2, {
+    message: 'Mood must be at least 2 characters.',
+  }),
+  description: z.string().min(10, {
+    message: 'Description must be at least 10 characters.',
+  }),
 });
 
-type PoemRequest = z.infer<typeof formSchema>;
+export type PoemRequest = z.infer<typeof formSchema>;
 
 type ActionResult = {
   success: boolean;
@@ -26,17 +36,17 @@ export async function sendRequest(
   }
 
   try {
-    // In a real application, you would send this data to a backend,
-    // save it to a database, or send an email.
-    // For now, we'll just log it to the server console.
-    console.log('New poem request received:', validatedValues.data);
+    const newRequest = {
+      id: Date.now().toString(),
+      ...validatedValues.data,
+      createdAt: new Date().toISOString(),
+    };
     
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await addRequest(newRequest);
     
     return { success: true };
   } catch (error) {
     console.error('Error sending request:', error);
-    return { success: false, error: 'Failed to send request. Please try again.' };
+    return { success: false, error: 'Failed to save request. Please try again.' };
   }
 }

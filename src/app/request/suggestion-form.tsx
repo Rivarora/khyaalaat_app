@@ -31,6 +31,9 @@ import { useToast } from '@/hooks/use-toast';
 import { sendRequest } from './actions';
 
 const formSchema = z.object({
+  name: z.string().min(2, {
+    message: 'Name must be at least 2 characters.',
+  }),
   topic: z.string().min(2, {
     message: 'Topic must be at least 2 characters.',
   }),
@@ -51,6 +54,7 @@ export function SuggestionForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: '',
       topic: '',
       mood: '',
       description: '',
@@ -105,6 +109,20 @@ export function SuggestionForm() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Your Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Jane Doe" {...field} />
+                    </FormControl>
+                    <FormDescription>Please enter your name.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="topic"

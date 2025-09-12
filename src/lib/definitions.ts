@@ -7,3 +7,13 @@ export type Poetry = {
   likes: number;
   genre: 'Love' | 'Sad' | 'Motivational' | 'Nature' | 'Other';
 };
+
+export type PoemRequest = {
+  id: string;
+  name: string;
+  topic: string;
+  genre: 'Love' | 'Sad' | 'Motivational' | 'Nature';
+  mood: string;
+  description: string;
+  createdAt: string;
+};
