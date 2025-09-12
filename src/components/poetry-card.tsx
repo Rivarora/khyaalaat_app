@@ -45,27 +45,38 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-        <h3 className="text-2xl font-headline font-bold text-white drop-shadow-lg">
+        <motion.h3
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3, delay: index * 0.1 + 0.3 }}
+          className="text-2xl font-headline font-bold text-white drop-shadow-lg"
+        >
           {poetry.title}
-        </h3>
+        </motion.h3>
         <div className="flex justify-between items-center mt-3">
           <p className="text-sm font-semibold bg-primary/90 text-primary-foreground px-3 py-1 rounded-full backdrop-blur-sm">
             {poetry.genre}
           </p>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLike}
-            className="text-white hover:bg-white/20 hover:text-white rounded-full"
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
           >
-            <Heart
-              className={cn(
-                'mr-2 h-5 w-5 transition-all',
-                isLiked ? 'fill-red-500 text-red-500' : 'fill-white'
-              )}
-            />
-            {likes}
-          </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLike}
+              className="text-white hover:bg-white/20 hover:text-white rounded-full"
+            >
+              <Heart
+                className={cn(
+                  'mr-2 h-5 w-5 transition-all',
+                  isLiked ? 'fill-red-500 text-red-500' : 'fill-white'
+                )}
+              />
+              {likes}
+            </Button>
+          </motion.div>
         </div>
       </div>
     </motion.div>
