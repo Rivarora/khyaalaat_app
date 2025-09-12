@@ -11,7 +11,6 @@ import { Button } from './ui/button';
 import { deletePoetry, likePoetry, addComment, deleteComment } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from './ui/input';
-import { Separator } from './ui/separator';
 import {
   Dialog,
   DialogContent,
@@ -41,7 +40,8 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
     setIsLiked(likedPoems.includes(poetry.id));
   }, [poetry.id]);
 
-  const handleLike = () => {
+  const handleLike = (e: React.MouseEvent) => {
+    e.stopPropagation();
     startTransition(async () => {
       const likedPoems = JSON.parse(localStorage.getItem('likedPoems') || '[]');
       const newIsLiked = !isLiked;
@@ -75,7 +75,8 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
     });
   };
 
-  const handleShare = async () => {
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (navigator.share) {
       try {
         await navigator.share({
@@ -182,6 +183,39 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
               {poetry.caption && (
                 <p className="mt-1 text-sm text-white/90 line-clamp-2">{poetry.caption}</p>
               )}
+               <div className="flex items-center gap-1 mt-4 text-white">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLike}
+                    disabled={isPending}
+                    className="hover:bg-white/20 text-white !px-2"
+                  >
+                    <Heart
+                      className={cn(
+                        'mr-2 h-5 w-5 transition-all',
+                        isLiked ? 'fill-red-500 text-red-500' : 'fill-white'
+                      )}
+                    />
+                    {likes}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {}}
+                    className="hover:bg-white/20 text-white"
+                  >
+                    <MessageCircle className="h-5 w-5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleShare}
+                    className="hover:bg-white/20 text-white"
+                  >
+                    <Share2 className="h-5 w-5" />
+                  </Button>
+              </div>
             </div>
           </motion.div>
         </motion.div>
@@ -197,7 +231,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
               data-ai-hint={poetry.image.imageHint}
             />
           </div>
-          <div className="p-8 flex flex-col">
+          <div className="p-8 flex flex-col max-h-[90vh]">
             <DialogHeader>
               <DialogTitle className="font-headline text-4xl mb-4 text-primary">{poetry.title}</DialogTitle>
             </DialogHeader>
@@ -218,7 +252,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={(e) => { e.stopPropagation(); handleShare(); }}
+                    onClick={(e) => { e.stopPropagation(); handleShare(e); }}
                     className="hover:bg-accent/50"
                   >
                     <Share2 className="h-5 w-5" />
@@ -234,7 +268,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e) => { e.stopPropagation(); handleLike(); }}
+                    onClick={(e) => { e.stopPropagation(); handleLike(e); }}
                     disabled={isPending}
                     className="hover:bg-accent/50"
                   >
