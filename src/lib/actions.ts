@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { writeFile } from 'fs/promises';
+import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { addPoetry } from './data';
 import type { Poetry } from './definitions';
@@ -40,10 +40,12 @@ export async function uploadPoetry(prevState: any, formData: FormData) {
 
   const buffer = Buffer.from(await image.arrayBuffer());
   const filename = `${Date.now()}-${image.name}`;
+  const uploadDir = join(process.cwd(), 'public', 'uploads');
   const imagePath = `/uploads/${filename}`;
-  const fullPath = join(process.cwd(), 'public', 'uploads', filename);
+  const fullPath = join(uploadDir, filename);
 
   try {
+    await mkdir(uploadDir, { recursive: true });
     await writeFile(fullPath, buffer);
   } catch (error) {
     console.error('Failed to write file:', error);
