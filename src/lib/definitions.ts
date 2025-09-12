@@ -6,6 +6,7 @@ export type Poetry = {
   image: ImagePlaceholder;
   likes: number;
   genre: 'Love' | 'Sad' | 'Motivational' | 'Nature' | 'Other';
+  comments: string[];
 };
 
 export type PoemRequest = {

@@ -3,12 +3,12 @@
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MessageCircle, Send, Share2, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 
 import type { Poetry } from '@/lib/definitions';
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
-import { deletePoetry } from '@/lib/actions';
+import { deletePoetry, likePoetry, addComment } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from './ui/input';
 import { Separator } from './ui/separator';
@@ -19,21 +19,19 @@ type PoetryCardProps = {
 };
 
 export function PoetryCard({ poetry, index }: PoetryCardProps) {
-  const [likes, setLikes] = useState(poetry.likes);
   const [isLiked, setIsLiked] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [comments, setComments] = useState<string[]>([]);
   const [newComment, setNewComment] = useState('');
+  const [isPending, startTransition] = useTransition();
+
   const { toast } = useToast();
 
   const handleLike = () => {
-    if (isLiked) {
-      setLikes(likes - 1);
-    } else {
-      setLikes(likes + 1);
-    }
-    setIsLiked(!isLiked);
+    startTransition(async () => {
+      setIsLiked(!isLiked);
+      await likePoetry(poetry.id, !isLiked);
+    });
   };
 
   const handleShare = async () => {
@@ -48,7 +46,6 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
         console.error('Error sharing:', error);
       }
     } else {
-      // Fallback for browsers that don't support Web Share API
       navigator.clipboard.writeText(window.location.href);
       toast({
         title: 'Link Copied',
@@ -63,8 +60,10 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
 
   const handleAddComment = () => {
     if (newComment.trim()) {
-      setComments([...comments, newComment.trim()]);
-      setNewComment('');
+      startTransition(async () => {
+        await addComment(poetry.id, newComment.trim());
+        setNewComment('');
+      });
     }
   };
 
@@ -104,7 +103,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
           src={poetry.image.imageUrl}
           alt={poetry.title}
           width={600}
-          height={Math.floor(Math.random() * (950 - 600 + 1)) + 600} // Random height for masonry
+          height={Math.floor(Math.random() * (950 - 600 + 1)) + 600}
           className="object-cover w-full h-auto"
           data-ai-hint={poetry.image.imageHint}
         />
@@ -158,6 +157,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                 variant="ghost"
                 size="sm"
                 onClick={handleLike}
+                disabled={isPending}
                 className="text-white hover:bg-white/20 hover:text-white rounded-full"
               >
                 <Heart
@@ -166,7 +166,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                     isLiked ? 'fill-red-500 text-red-500' : 'fill-white'
                   )}
                 />
-                {likes}
+                {poetry.likes + (isLiked ? 1 : 0)}
               </Button>
             </motion.div>
           </div>
@@ -187,15 +187,16 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                disabled={isPending}
                 className="flex-1"
               />
-              <Button onClick={handleAddComment} size="icon">
+              <Button onClick={handleAddComment} size="icon" disabled={isPending}>
                 <Send className="h-4 w-4" />
               </Button>
             </div>
             <div className="space-y-2 max-h-40 overflow-y-auto">
-              {comments.length > 0 ? (
-                comments.map((comment, i) => (
+              {poetry.comments && poetry.comments.length > 0 ? (
+                poetry.comments.map((comment, i) => (
                   <div key={i} className="text-sm p-2 rounded-md bg-muted/50">
                     {comment}
                   </div>

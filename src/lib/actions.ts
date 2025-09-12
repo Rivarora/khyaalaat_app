@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
-import { addPoetry, deletePoetryById } from './data';
+import { addPoetry, deletePoetryById, updatePoetryLikes, addCommentToPoetry } from './data';
 import type { Poetry } from './definitions';
 
 const uploadSchema = z.object({
@@ -63,6 +63,7 @@ export async function uploadPoetry(prevState: any, formData: FormData) {
       description: title,
     },
     likes: 0,
+    comments: [],
   };
 
   await addPoetry(newPoetry);
@@ -87,5 +88,15 @@ export async function deletePoetry(poetryId: string) {
     }
   }
 
+  revalidatePath('/');
+}
+
+export async function likePoetry(poetryId: string, isLiked: boolean) {
+  await updatePoetryLikes(poetryId, isLiked);
+  revalidatePath('/');
+}
+
+export async function addComment(poetryId: string, comment: string) {
+  await addCommentToPoetry(poetryId, comment);
   revalidatePath('/');
 }

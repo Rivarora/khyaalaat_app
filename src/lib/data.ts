@@ -9,9 +9,10 @@ const dataFilePath = path.join(process.cwd(), 'src', 'lib', 'poetry.json');
 async function readPoetryData(): Promise<Poetry[]> {
   try {
     const fileContent = await fs.readFile(dataFilePath, 'utf-8');
-    return JSON.parse(fileContent);
+    const poetryData: Poetry[] = JSON.parse(fileContent);
+    // Ensure comments array exists for each poem
+    return poetryData.map(p => ({ ...p, comments: p.comments || [] }));
   } catch (error) {
-    // If the file doesn't exist or is empty, create it with an empty array.
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       try {
         await fs.writeFile(dataFilePath, JSON.stringify([]));
@@ -20,10 +21,13 @@ async function readPoetryData(): Promise<Poetry[]> {
       }
       return [];
     }
-    // For other errors, return an empty array.
     console.error('Error reading poetry data:', error);
     return [];
   }
+}
+
+async function writePoetryData(data: Poetry[]): Promise<void> {
+  await fs.writeFile(dataFilePath, JSON.stringify(data, null, 2));
 }
 
 export async function getPoetryData(): Promise<Poetry[]> {
@@ -33,7 +37,7 @@ export async function getPoetryData(): Promise<Poetry[]> {
 export async function addPoetry(poetry: Poetry) {
   const currentData = await readPoetryData();
   currentData.unshift(poetry);
-  await fs.writeFile(dataFilePath, JSON.stringify(currentData, null, 2));
+  await writePoetryData(currentData);
 }
 
 export async function deletePoetryById(poetryId: string): Promise<Poetry | undefined> {
@@ -43,6 +47,29 @@ export async function deletePoetryById(poetryId: string): Promise<Poetry | undef
     return undefined;
   }
   const updatedData = currentData.filter(p => p.id !== poetryId);
-  await fs.writeFile(dataFilePath, JSON.stringify(updatedData, null, 2));
+  await writePoetryData(updatedData);
   return poetryToDelete;
+}
+
+export async function updatePoetryLikes(poetryId: string, isLiked: boolean): Promise<void> {
+  const currentData = await readPoetryData();
+  const updatedData = currentData.map(p => {
+    if (p.id === poetryId) {
+      return { ...p, likes: p.likes + (isLiked ? 1 : -1) };
+    }
+    return p;
+  });
+  await writePoetryData(updatedData);
+}
+
+export async function addCommentToPoetry(poetryId: string, comment: string): Promise<void> {
+  const currentData = await readPoetryData();
+  const updatedData = currentData.map(p => {
+    if (p.id === poetryId) {
+      const newComments = p.comments ? [...p.comments, comment] : [comment];
+      return { ...p, comments: newComments };
+    }
+    return p;
+  });
+  await writePoetryData(updatedData);
 }
