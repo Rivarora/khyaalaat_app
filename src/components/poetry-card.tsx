@@ -2,12 +2,14 @@
 
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Heart } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import type { Poetry } from '@/lib/definitions';
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
+import { deletePoetry } from '@/lib/actions';
+import { useToast } from '@/hooks/use-toast';
 
 type PoetryCardProps = {
   poetry: Poetry;
@@ -17,6 +19,8 @@ type PoetryCardProps = {
 export function PoetryCard({ poetry, index }: PoetryCardProps) {
   const [likes, setLikes] = useState(poetry.likes);
   const [isLiked, setIsLiked] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false);
+  const { toast } = useToast();
 
   const handleLike = () => {
     if (isLiked) {
@@ -27,12 +31,62 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
     setIsLiked(!isLiked);
   };
 
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: poetry.title,
+          text: `Check out this poem: ${poetry.title}`,
+          url: window.location.href,
+        });
+      } catch (error) {
+        console.error('Error sharing:', error);
+      }
+    } else {
+      // Fallback for browsers that don't support Web Share API
+      navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: 'Link Copied',
+        description: 'The link to this page has been copied to your clipboard.',
+      });
+    }
+  };
+
+  const handleComment = () => {
+    toast({
+      title: 'Coming Soon',
+      description: 'The ability to comment on poems is coming soon!',
+    });
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deletePoetry(poetry.id);
+      setIsDeleted(true);
+      toast({
+        title: 'Poem Deleted',
+        description: `"${poetry.title}" has been successfully deleted.`,
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete the poem.',
+      });
+    }
+  };
+
+  if (isDeleted) {
+    return null;
+  }
+
   return (
     <motion.div
       className="group relative block w-full overflow-hidden rounded-lg break-inside-avoid shadow-lg"
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
+      exit={{ opacity: 0, y: -20 }}
       whileHover={{ scale: 1.02 }}
     >
       <Image
@@ -44,6 +98,16 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
         data-ai-hint={poetry.image.imageHint}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
+      <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleDelete}
+          className="text-white bg-black/30 hover:bg-red-500/50 hover:text-white rounded-full"
+        >
+          <Trash2 className="h-5 w-5" />
+        </Button>
+      </div>
       <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
         <motion.h3
           initial={{ y: 20, opacity: 0 }}
@@ -58,10 +122,27 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
             {poetry.genre}
           </p>
           <motion.div
+            className="flex items-center gap-1"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.4 }}
           >
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleShare}
+              className="text-white hover:bg-white/20 hover:text-white rounded-full"
+            >
+              <Share2 className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleComment}
+              className="text-white hover:bg-white/20 hover:text-white rounded-full"
+            >
+              <MessageCircle className="h-5 w-5" />
+            </Button>
             <Button
               variant="ghost"
               size="sm"

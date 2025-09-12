@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "id": "1757672106476",
+    "title": "life",
+    "genre": "Motivational",
+    "image": {
+      "id": "1757672106476",
+      "imageUrl": "/uploads/1757672106473-Dark Photocentric Social Media Manager Notepad Instagram Post   (1).png",
+      "imageHint": "poetry image",
+      "description": "life"
+    },
+    "likes": 0
+  },
+  {
+    "id": "1757672105528",
+    "title": "life",
+    "genre": "Motivational",
+    "image": {
+      "id": "1757672105528",
+      "imageUrl": "/uploads/1757672105525-Dark Photocentric Social Media Manager Notepad Instagram Post   (1).png",
+      "imageHint": "poetry image",
+      "description": "life"
+    },
+    "likes": 0
+  }
+]

@@ -10,7 +10,7 @@ async function readPoetryData(): Promise<Poetry[]> {
     return JSON.parse(fileContent);
   } catch (error) {
     // If the file doesn't exist or is empty, create it with an empty array.
-    if (error.code === 'ENOENT') {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       await fs.writeFile(dataFilePath, JSON.stringify([]));
       return [];
     }
@@ -28,4 +28,15 @@ export async function addPoetry(poetry: Poetry) {
   const currentData = await readPoetryData();
   currentData.unshift(poetry);
   await fs.writeFile(dataFilePath, JSON.stringify(currentData, null, 2));
+}
+
+export async function deletePoetryById(poetryId: string): Promise<Poetry | undefined> {
+  const currentData = await readPoetryData();
+  const poetryToDelete = currentData.find(p => p.id === poetryId);
+  if (!poetryToDelete) {
+    return undefined;
+  }
+  const updatedData = currentData.filter(p => p.id !== poetryId);
+  await fs.writeFile(dataFilePath, JSON.stringify(updatedData, null, 2));
+  return poetryToDelete;
 }

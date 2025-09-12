@@ -2,9 +2,9 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
-import { addPoetry } from './data';
+import { addPoetry, deletePoetryById } from './data';
 import type { Poetry } from './definitions';
 
 const uploadSchema = z.object({
@@ -70,4 +70,22 @@ export async function uploadPoetry(prevState: any, formData: FormData) {
   revalidatePath('/');
 
   return { message: `Poetry "${title}" uploaded successfully!` };
+}
+
+export async function deletePoetry(poetryId: string) {
+  const deletedPoetry = await deletePoetryById(poetryId);
+
+  if (deletedPoetry) {
+    // Delete the image file from the server
+    try {
+      const imagePath = join(process.cwd(), 'public', deletedPoetry.image.imageUrl);
+      await unlink(imagePath);
+    } catch (error) {
+      // Log the error but don't block the response.
+      // The image might not exist, or there could be a permissions issue.
+      console.error(`Failed to delete image file: ${deletedPoetry.image.imageUrl}`, error);
+    }
+  }
+
+  revalidatePath('/');
 }
