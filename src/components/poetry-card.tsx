@@ -8,7 +8,7 @@ import { useState, useTransition } from 'react';
 import type { Poetry } from '@/lib/definitions';
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
-import { deletePoetry, likePoetry, addComment } from '@/lib/actions';
+import { deletePoetry, likePoetry, addComment, deleteComment } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from './ui/input';
 import { Separator } from './ui/separator';
@@ -24,6 +24,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [isPending, startTransition] = useTransition();
+  const [isCommentActionPending, startCommentActionTransition] = useTransition();
 
   const { toast } = useToast();
 
@@ -60,11 +61,17 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
 
   const handleAddComment = () => {
     if (newComment.trim()) {
-      startTransition(async () => {
+      startCommentActionTransition(async () => {
         await addComment(poetry.id, newComment.trim());
         setNewComment('');
       });
     }
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    startCommentActionTransition(async () => {
+      await deleteComment(poetry.id, commentId);
+    });
   };
 
   const handleDelete = async () => {
@@ -187,18 +194,27 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
-                disabled={isPending}
+                disabled={isCommentActionPending}
                 className="flex-1"
               />
-              <Button onClick={handleAddComment} size="icon" disabled={isPending}>
+              <Button onClick={handleAddComment} size="icon" disabled={isCommentActionPending}>
                 <Send className="h-4 w-4" />
               </Button>
             </div>
             <div className="space-y-2 max-h-40 overflow-y-auto">
               {poetry.comments && poetry.comments.length > 0 ? (
-                poetry.comments.map((comment, i) => (
-                  <div key={i} className="text-sm p-2 rounded-md bg-muted/50">
-                    {comment}
+                poetry.comments.map((comment) => (
+                  <div key={comment.id} className="group/comment text-sm p-2 rounded-md bg-muted/50 flex justify-between items-center">
+                    <span>{comment.text}</span>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 opacity-0 group-hover/comment:opacity-100"
+                      onClick={() => handleDeleteComment(comment.id)}
+                      disabled={isCommentActionPending}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive/70" />
+                    </Button>
                   </div>
                 ))
               ) : (

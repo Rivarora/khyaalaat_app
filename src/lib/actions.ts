@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
-import { addPoetry, deletePoetryById, updatePoetryLikes, addCommentToPoetry } from './data';
+import { addPoetry, deletePoetryById, updatePoetryLikes, addCommentToPoetry, deleteCommentFromPoetry } from './data';
 import type { Poetry } from './definitions';
 
 const uploadSchema = z.object({
@@ -98,5 +98,10 @@ export async function likePoetry(poetryId: string, isLiked: boolean) {
 
 export async function addComment(poetryId: string, comment: string) {
   await addCommentToPoetry(poetryId, comment);
+  revalidatePath('/');
+}
+
+export async function deleteComment(poetryId: string, commentId: string) {
+  await deleteCommentFromPoetry(poetryId, commentId);
   revalidatePath('/');
 }

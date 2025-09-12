@@ -1,17 +1,28 @@
 'use server';
 
-import type { Poetry } from './definitions';
+import type { Poetry, Comment } from './definitions';
 import { promises as fs } from 'fs';
 import path from 'path';
 
 const dataFilePath = path.join(process.cwd(), 'src', 'lib', 'poetry.json');
 
+function isOldCommentFormat(comment: any): comment is string {
+  return typeof comment === 'string';
+}
+
 async function readPoetryData(): Promise<Poetry[]> {
   try {
     const fileContent = await fs.readFile(dataFilePath, 'utf-8');
     const poetryData: Poetry[] = JSON.parse(fileContent);
-    // Ensure comments array exists for each poem
-    return poetryData.map(p => ({ ...p, comments: p.comments || [] }));
+    // Ensure comments array exists for each poem and migrate old string comments
+    return poetryData.map(p => ({ 
+      ...p, 
+      comments: (p.comments || []).map(c => 
+        isOldCommentFormat(c) 
+        ? { id: `${Date.now()}-${Math.random()}`, text: c } 
+        : c
+      )
+    }));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       try {
@@ -62,11 +73,27 @@ export async function updatePoetryLikes(poetryId: string, isLiked: boolean): Pro
   await writePoetryData(updatedData);
 }
 
-export async function addCommentToPoetry(poetryId: string, comment: string): Promise<void> {
+export async function addCommentToPoetry(poetryId: string, commentText: string): Promise<void> {
+  const currentData = await readPoetryData();
+  const newComment: Comment = {
+    id: `${Date.now()}-${Math.random()}`,
+    text: commentText,
+  };
+  const updatedData = currentData.map(p => {
+    if (p.id === poetryId) {
+      const newComments = p.comments ? [...p.comments, newComment] : [newComment];
+      return { ...p, comments: newComments };
+    }
+    return p;
+  });
+  await writePoetryData(updatedData);
+}
+
+export async function deleteCommentFromPoetry(poetryId: string, commentId: string): Promise<void> {
   const currentData = await readPoetryData();
   const updatedData = currentData.map(p => {
     if (p.id === poetryId) {
-      const newComments = p.comments ? [...p.comments, comment] : [comment];
+      const newComments = p.comments.filter(c => c.id !== commentId);
       return { ...p, comments: newComments };
     }
     return p;

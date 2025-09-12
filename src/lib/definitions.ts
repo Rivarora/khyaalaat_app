@@ -1,12 +1,17 @@
 import type { ImagePlaceholder } from './placeholder-images';
 
+export type Comment = {
+  id: string;
+  text: string;
+}
+
 export type Poetry = {
   id: string;
   title: string;
   image: ImagePlaceholder;
   likes: number;
   genre: 'Love' | 'Sad' | 'Motivational' | 'Nature' | 'Other';
-  comments: string[];
+  comments: Comment[];
 };
 
 export type PoemRequest = {

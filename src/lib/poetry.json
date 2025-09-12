@@ -1,4 +1,3 @@
-
 [
   {
     "id": "1757686467772",
@@ -10,8 +9,11 @@
       "imageHint": "poetry image",
       "description": "Wind"
     },
-    "likes": 0,
-    "comments": []
+    "likes": 1,
+    "comments": [
+      "good",
+      "good"
+    ]
   },
   {
     "id": "1757680554914",
