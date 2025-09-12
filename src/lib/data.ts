@@ -1,3 +1,5 @@
+'use server';
+
 import type { Poetry } from './definitions';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -11,7 +13,11 @@ async function readPoetryData(): Promise<Poetry[]> {
   } catch (error) {
     // If the file doesn't exist or is empty, create it with an empty array.
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      await fs.writeFile(dataFilePath, JSON.stringify([]));
+      try {
+        await fs.writeFile(dataFilePath, JSON.stringify([]));
+      } catch (writeError) {
+        console.error('Error creating poetry data file:', writeError);
+      }
       return [];
     }
     // For other errors, return an empty array.

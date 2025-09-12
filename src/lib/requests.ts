@@ -1,3 +1,5 @@
+'use server';
+
 import type { PoemRequest } from './definitions';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -12,7 +14,11 @@ async function readRequestData(): Promise<PoemRequest[]> {
     return data.map((req: any) => ({ ...req, completed: req.completed ?? false }));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      await fs.writeFile(dataFilePath, JSON.stringify([]));
+      try {
+        await fs.writeFile(dataFilePath, JSON.stringify([]));
+      } catch (writeError) {
+        console.error('Error creating request data file:', writeError);
+      }
       return [];
     }
     console.error('Error reading request data:', error);
