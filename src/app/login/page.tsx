@@ -24,33 +24,32 @@ function GoogleIcon() {
 export default function LoginPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
-  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isSigningIn, setIsSigningIn] = useState(true);
 
   useEffect(() => {
-    // If the user is already logged in, redirect them.
     if (!loading && user) {
       router.push('/admin/upload');
       return;
     }
 
-    // Check for redirect result when the component mounts.
-    const checkRedirectResult = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result) {
-          // This will trigger the onAuthStateChanged listener and redirect.
-          setIsSigningIn(false);
-          router.push('/admin/upload');
-        }
-      } catch (error) {
-        console.error('Error getting redirect result:', error);
-        setIsSigningIn(false);
-      }
-    };
-
-    // Only check for redirect result if not loading and no user.
+    // This flag indicates that we are waiting for a redirect result.
+    // getRedirectResult should only be called once on page load.
     if (!loading && !user) {
-        checkRedirectResult();
+        getRedirectResult(auth)
+          .then((result) => {
+            if (result) {
+              // User signed in. The onAuthStateChanged listener will handle the redirect.
+              // No need to set isSigningIn to false here as the page will redirect.
+            } else {
+              // No redirect result, so the user is not signing in via redirect.
+              // Allow them to click the sign-in button.
+              setIsSigningIn(false);
+            }
+          })
+          .catch((error) => {
+            console.error('Error getting redirect result:', error);
+            setIsSigningIn(false);
+          });
     }
   }, [user, loading, router]);
 
@@ -67,8 +66,7 @@ export default function LoginPage() {
     }
   };
 
-
-  if (loading || user || isSigningIn) {
+  if (loading || isSigningIn) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -95,11 +93,7 @@ export default function LoginPage() {
               Please sign in to manage your poetry portfolio.
             </p>
             <Button onClick={handleSignIn} size="lg" disabled={isSigningIn}>
-              {isSigningIn ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <GoogleIcon />
-              )}
+              <GoogleIcon />
               Sign in with Google
             </Button>
           </div>
