@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Feather } from 'lucide-react';
 
 export function SplashScreen() {
   const [isVisible, setIsVisible] = useState(true);
@@ -28,7 +27,6 @@ export function SplashScreen() {
             transition={{ duration: 0.5, delay: 0.2, ease: 'easeOut' }}
             className="flex flex-col items-center gap-4"
           >
-            <Feather className="h-16 w-16 text-primary" />
             <h1 className="text-6xl font-headline font-black text-primary">Khyaalaat</h1>
           </motion.div>
         </motion.div>
