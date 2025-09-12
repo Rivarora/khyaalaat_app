@@ -15,14 +15,15 @@ async function readPoetryData(): Promise<Poetry[]> {
     const fileContent = await fs.readFile(dataFilePath, 'utf-8');
     const poetryData: Poetry[] = JSON.parse(fileContent);
     // Ensure comments array exists for each poem and migrate old string comments
-    return poetryData.map(p => ({ 
-      ...p, 
-      comments: (p.comments || []).map(c => 
+    return poetryData.map(p => {
+      const comments = p.comments || [];
+      const migratedComments = comments.map((c, index) => 
         isOldCommentFormat(c) 
-        ? { id: `${Date.now()}-${Math.random()}`, text: c } 
-        : c
-      )
-    }));
+        ? { id: `${p.id}-comment-${index}-${Date.now()}`, text: c } 
+        : (c.id ? c : { ...c, id: `${p.id}-comment-${index}-${Date.now()}` })
+      );
+      return { ...p, comments: migratedComments };
+    });
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       try {
