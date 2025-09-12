@@ -97,9 +97,9 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
       transition={{ duration: 0.5, delay: index * 0.1 }}
       exit={{ opacity: 0, y: -20 }}
       layout
-      whileHover={{ y: -5 }}
+      whileHover={{ y: -5, scale: 1.02, transition: { duration: 0.2 } }}
     >
-      <motion.div whileHover={{ scale: 1.02 }} className="relative">
+      <motion.div className="relative">
         <Image
           src={poetry.image.imageUrl}
           alt={poetry.title}
