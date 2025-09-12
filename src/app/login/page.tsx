@@ -27,53 +27,26 @@ export default function LoginPage() {
   const [isSigningIn, setIsSigningIn] = useState(true);
 
   useEffect(() => {
-    // If the user is already authenticated, redirect them away from the login page.
     if (!loading && user) {
       router.push('/admin/upload');
-      return;
-    }
-
-    // When the page loads, check if it's the result of a redirect from Google.
-    // This should only run once, and only if we aren't already loading a user.
-    if (!loading && !user) {
-        getRedirectResult(auth)
-          .then((result) => {
-            if (result) {
-              // User has just signed in. The `onAuthStateChanged` listener in AuthProvider
-              // will detect the new user and this component will re-render.
-              // We'll be redirected by the effect hook above.
-              // No need to set state here, as a redirect is imminent.
-            } else {
-              // No redirect result was found. This means the user has landed on the
-              // login page without coming from Google. We can allow them to click the button.
-              setIsSigningIn(false);
-            }
-          })
-          .catch((error) => {
-            // Handle errors from getRedirectResult, e.g., auth/unauthorized-domain
-            console.error('Error during sign-in redirect:', error);
-            // Allow user to try again.
-            setIsSigningIn(false);
-          });
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+    getRedirectResult(auth).catch((error) => {
+      console.error('Error getting redirect result:', error);
+    }).finally(() => {
+      setIsSigningIn(false);
+    });
+  }, []);
 
 
   const handleSignIn = async () => {
     setIsSigningIn(true);
     const provider = new GoogleAuthProvider();
-    try {
-      // This will navigate away from the current page.
-      await signInWithRedirect(auth, provider);
-    } catch (error) {
-      // This catch block might not even be reached if the redirect is successful,
-      // but it's good practice to have it.
-      console.error('Error starting sign-in with redirect:', error);
-      setIsSigningIn(false);
-    }
+    await signInWithRedirect(auth, provider);
   };
 
-  // Show a loading indicator while checking auth status or during the sign-in process.
   if (loading || isSigningIn) {
     return (
       <div className="flex justify-center items-center h-screen">
