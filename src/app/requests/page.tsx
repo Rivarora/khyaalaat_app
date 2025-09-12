@@ -18,29 +18,34 @@ import { DeleteRequestButton } from './delete-request-button';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import type { PoemRequest } from '@/lib/definitions';
+import { useAuth } from '@/components/providers/auth-provider';
 
 function RequestsList({ requests }: { requests: PoemRequest[] }) {
+  const { user } = useAuth();
+  
   return (
     <div className="border rounded-lg shadow-lg">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[50px]">Done</TableHead>
+            {user && <TableHead className="w-[50px]">Done</TableHead>}
             <TableHead className="w-[150px]">Requester</TableHead>
             <TableHead>Topic</TableHead>
             <TableHead>Genre</TableHead>
             <TableHead>Mood</TableHead>
             <TableHead className="text-right">Date</TableHead>
-            <TableHead className="w-[50px]">Delete</TableHead>
+            {user && <TableHead className="w-[50px]">Delete</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {requests.length > 0 ? (
             requests.map((request) => (
               <TableRow key={request.id} className={cn(request.completed && 'bg-muted/50 text-muted-foreground')}>
-                <TableCell>
-                  <CompletedCheckbox requestId={request.id} isCompleted={request.completed} />
-                </TableCell>
+                {user && (
+                  <TableCell>
+                    <CompletedCheckbox requestId={request.id} isCompleted={request.completed} />
+                  </TableCell>
+                )}
                 <TableCell className="font-medium">{request.name}</TableCell>
                 <TableCell>{request.topic}</TableCell>
                 <TableCell>
@@ -50,14 +55,16 @@ function RequestsList({ requests }: { requests: PoemRequest[] }) {
                 <TableCell className="text-right">
                   {format(new Date(request.createdAt), "MMM d, yyyy")}
                 </TableCell>
-                <TableCell>
-                  <DeleteRequestButton requestId={request.id} />
-                </TableCell>
+                {user && (
+                  <TableCell>
+                    <DeleteRequestButton requestId={request.id} />
+                  </TableCell>
+                )}
               </TableRow>
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={7} className="h-24 text-center">
+              <TableCell colSpan={user ? 7 : 5} className="h-24 text-center">
                 No requests yet.
               </TableCell>
             </TableRow>
