@@ -20,6 +20,8 @@ interface EmailAuthFormProps {
   setPending: (isPending: boolean) => void;
 }
 
+const ALLOWED_EMAIL = 'arorariva19@gmail.com';
+
 export function EmailAuthForm({ onSuccess, onError, setPending }: EmailAuthFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,6 +34,13 @@ export function EmailAuthForm({ onSuccess, onError, setPending }: EmailAuthFormP
     setLoading(true);
     setPending(true);
     onError(''); // Clear previous errors
+
+    if (email.toLowerCase() !== ALLOWED_EMAIL) {
+      onError('Access is restricted. Please use the authorized email address.');
+      setLoading(false);
+      setPending(false);
+      return;
+    }
 
     try {
       let userCredential;
@@ -46,7 +55,16 @@ export function EmailAuthForm({ onSuccess, onError, setPending }: EmailAuthFormP
       }
       onSuccess(userCredential.user);
     } catch (error: any) {
-      onError(error.message);
+      if (error.code === 'auth/email-already-in-use' && !isSignUp) {
+          try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            onSuccess(userCredential.user);
+          } catch (signInError: any) {
+             onError(signInError.message);
+          }
+      } else {
+        onError(error.message);
+      }
     } finally {
       setLoading(false);
       setPending(false);
