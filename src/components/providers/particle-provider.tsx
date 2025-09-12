@@ -48,10 +48,10 @@ export function ParticleProvider({ children }: { children: React.ReactNode }) {
       },
       particles: {
         color: {
-          value: theme === 'dark' ? "#ffffff" : "#34495e",
+          value: "#FFD700",
         },
         links: {
-          color: theme === 'dark' ? "#ffffff" : "#34495e",
+          color: "#FFD700",
           distance: 150,
           enable: true,
           opacity: 0.5,
