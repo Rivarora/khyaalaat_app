@@ -29,15 +29,15 @@ type PoetryCardProps = {
 const cardVariants = {
   hidden: { opacity: 0, y: 50 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+  exit: { opacity: 0, y: -20, transition: { duration: 0.3 } },
 };
 
 export function PoetryCard({ poetry, index }: PoetryCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [likes, setLikes] = useState(poetry.likes);
-  const [isDeleted, setIsDeleted] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
-  const [comments, setComments] = useState<Comment[]>(poetry.comments || []);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [isPending, startTransition] = useTransition();
   const [isCommentActionPending, startCommentActionTransition] = useTransition();
   const { user } = useAuth();
@@ -166,7 +166,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
     }
     
     startTransition(async () => {
-        setIsDeleted(true); // Optimistically remove from UI
+        // No optimistic deletion needed with AnimatePresence, it handles exit animations
         try {
           await deletePoetry(poetry.id);
           toast({
@@ -174,7 +174,6 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
             description: `"${poetry.title}" has been successfully deleted.`,
           });
         } catch (error) {
-          setIsDeleted(false); // Revert on error
           toast({
             variant: 'destructive',
             title: 'Error',
@@ -184,10 +183,6 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
     });
   };
 
-  if (isDeleted) {
-    return null;
-  }
-
   return (
     <Dialog onOpenChange={(open) => !open && setShowComments(false)}>
       <DialogTrigger asChild>
@@ -195,7 +190,6 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
           data-trigger-id={poetry.id}
           className="group relative block w-full cursor-pointer overflow-hidden rounded-lg break-inside-avoid shadow-lg bg-card"
           variants={cardVariants}
-          exit={{ opacity: 0, y: -20 }}
           layout
           whileHover={{ y: -5, scale: 1.02, transition: { duration: 0.2 } }}
         >
