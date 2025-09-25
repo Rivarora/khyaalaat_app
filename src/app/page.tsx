@@ -60,10 +60,7 @@ export default function Home() {
     loadData();
   }, []);
 
-  const genres = useMemo(() => {
-    const allGenres = poetryData.map((p) => p.genre);
-    return ['All', ...Array.from(new Set(allGenres))];
-  }, [poetryData]);
+  const genres = ['All', 'Love', 'Sad', 'Motivational', 'Nature', 'Other'];
 
   const filteredPoetry = useMemo(() => {
     if (selectedGenre === 'All') {
