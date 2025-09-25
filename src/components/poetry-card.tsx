@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -5,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MessageCircle, Send, Share2, Trash2 } from 'lucide-react';
 import { useState, useTransition, useEffect } from 'react';
 
-import type { Poetry } from '@/lib/definitions';
+import type { Poetry, Comment } from '@/lib/definitions';
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
 import { deletePoetry, likePoetry, addComment, deleteComment } from '@/lib/actions';
@@ -30,6 +31,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
   const [isDeleted, setIsDeleted] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
+  const [comments, setComments] = useState<Comment[]>(poetry.comments || []);
   const [isPending, startTransition] = useTransition();
   const [isCommentActionPending, startCommentActionTransition] = useTransition();
 
@@ -103,15 +105,40 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
   const handleAddComment = () => {
     if (newComment.trim()) {
       startCommentActionTransition(async () => {
-        await addComment(poetry.id, newComment.trim());
+        const tempId = `temp-${Date.now()}`;
+        const optimisticComment: Comment = { id: tempId, text: newComment.trim() };
+        
+        setComments(prev => [...prev, optimisticComment]);
         setNewComment('');
+
+        try {
+          await addComment(poetry.id, newComment.trim());
+        } catch (error) {
+           setComments(prev => prev.filter(c => c.id !== tempId));
+           toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to add comment.',
+           });
+        }
       });
     }
   };
 
   const handleDeleteComment = (commentId: string) => {
     startCommentActionTransition(async () => {
-      await deleteComment(poetry.id, commentId);
+      const originalComments = comments;
+      setComments(prev => prev.filter(c => c.id !== commentId));
+      try {
+        await deleteComment(poetry.id, commentId);
+      } catch (error) {
+        setComments(originalComments);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to delete comment.',
+        });
+      }
     });
   };
 
@@ -137,7 +164,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
   }
 
   return (
-    <Dialog>
+    <Dialog onOpenChange={(open) => !open && setShowComments(false)}>
       <DialogTrigger asChild>
         <motion.div
           className="group relative block w-full cursor-pointer overflow-hidden rounded-lg break-inside-avoid shadow-lg bg-card"
@@ -202,7 +229,12 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => {}}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        // This will trigger the dialog, and we want to see comments there
+                        document.querySelector(`[data-trigger-id="${poetry.id}"]`)?.click();
+                        setTimeout(() => setShowComments(true), 150);
+                    }}
                     className="hover:bg-white/20 text-white"
                   >
                     <MessageCircle className="h-5 w-5" />
@@ -220,8 +252,8 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
           </motion.div>
         </motion.div>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-y-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2">
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 flex flex-col">
+        <div className="grid grid-cols-1 md:grid-cols-2 flex-1 min-h-0">
           <div className="relative h-full min-h-[300px] md:min-h-[500px]">
             <Image
               src={poetry.image.imageUrl}
@@ -231,7 +263,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
               data-ai-hint={poetry.image.imageHint}
             />
           </div>
-          <div className="p-8 flex flex-col">
+          <div className="p-8 flex flex-col overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="font-headline text-4xl mb-4 text-primary">{poetry.title}</DialogTitle>
             </DialogHeader>
@@ -305,8 +337,8 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                       </Button>
                     </div>
                     <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {poetry.comments && poetry.comments.length > 0 ? (
-                        poetry.comments.map((comment) => (
+                      {comments && comments.length > 0 ? (
+                        comments.map((comment) => (
                           <div key={comment.id} className="group/comment text-sm p-2 rounded-md bg-muted flex justify-between items-center">
                             <span>{comment.text}</span>
                             <Button 
