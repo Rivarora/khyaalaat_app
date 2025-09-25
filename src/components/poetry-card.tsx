@@ -220,7 +220,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
           </motion.div>
         </motion.div>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl p-0">
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-y-auto">
         <div className="grid grid-cols-1 md:grid-cols-2">
           <div className="relative h-full min-h-[300px] md:min-h-[500px]">
             <Image
@@ -235,7 +235,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
             <DialogHeader>
               <DialogTitle className="font-headline text-4xl mb-4 text-primary">{poetry.title}</DialogTitle>
             </DialogHeader>
-            <div className="overflow-y-auto pr-4">
+            <div className="flex-grow">
               <p className="whitespace-pre-wrap text-foreground/90 leading-relaxed font-body">{poetry.poem}</p>
             </div>
             <div className="mt-6 pt-4 border-t">
