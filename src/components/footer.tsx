@@ -10,7 +10,7 @@ export function Footer() {
   return (
     <footer className="border-t mt-auto py-6">
       <div className="container mx-auto flex justify-center items-center px-4 gap-4">
-        {user && (
+        {user && user.email === 'arorariva19@gmail.com' && (
           <Button variant="ghost" asChild>
             <Link href="/admin/upload">Admin</Link>
           </Button>
