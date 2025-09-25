@@ -19,6 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { useAuth } from './providers/auth-provider';
 
 type PoetryCardProps = {
   poetry: Poetry;
@@ -34,13 +35,17 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
   const [comments, setComments] = useState<Comment[]>(poetry.comments || []);
   const [isPending, startTransition] = useTransition();
   const [isCommentActionPending, startCommentActionTransition] = useTransition();
-
+  const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
     const likedPoems = JSON.parse(localStorage.getItem('likedPoems') || '[]');
     setIsLiked(likedPoems.includes(poetry.id));
   }, [poetry.id]);
+  
+  useEffect(() => {
+    setComments(poetry.comments || []);
+  }, [poetry.comments]);
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -113,6 +118,8 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
 
         try {
           await addComment(poetry.id, newComment.trim());
+          // Ideally, re-fetch comments or get the real comment back from the server action
+          // For now, we'll just let the optimistic one stay, a full page refresh will fix it.
         } catch (error) {
            setComments(prev => prev.filter(c => c.id !== tempId));
            toast({
@@ -143,20 +150,33 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
   };
 
   const handleDelete = async () => {
-    try {
-      await deletePoetry(poetry.id);
-      setIsDeleted(true);
-      toast({
-        title: 'Poem Deleted',
-        description: `"${poetry.title}" has been successfully deleted.`,
-      });
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to delete the poem.',
-      });
+    // This action should be protected on the server side as well, but this is a client-side check
+    if (!user) {
+        toast({
+            variant: 'destructive',
+            title: 'Unauthorized',
+            description: 'You must be an admin to delete poems.',
+        });
+        return;
     }
+    
+    startTransition(async () => {
+        setIsDeleted(true); // Optimistically remove from UI
+        try {
+          await deletePoetry(poetry.id);
+          toast({
+            title: 'Poem Deleted',
+            description: `"${poetry.title}" has been successfully deleted.`,
+          });
+        } catch (error) {
+          setIsDeleted(false); // Revert on error
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to delete the poem.',
+          });
+        }
+    });
   };
 
   if (isDeleted) {
@@ -167,6 +187,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
     <Dialog onOpenChange={(open) => !open && setShowComments(false)}>
       <DialogTrigger asChild>
         <motion.div
+          data-trigger-id={poetry.id}
           className="group relative block w-full cursor-pointer overflow-hidden rounded-lg break-inside-avoid shadow-lg bg-card"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
@@ -185,19 +206,21 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
               data-ai-hint={poetry.image.imageHint}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
-            <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete();
-                }}
-                className="text-white bg-black/30 hover:bg-red-500/50 hover:text-white rounded-full"
-              >
-                <Trash2 className="h-5 w-5" />
-              </Button>
-            </div>
+            {user && (
+              <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete();
+                  }}
+                  className="text-white bg-black/30 hover:bg-red-500/50 hover:text-white rounded-full"
+                >
+                  <Trash2 className="h-5 w-5" />
+                </Button>
+              </div>
+            )}
             <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
               <motion.h3
                 initial={{ y: 20, opacity: 0 }}
@@ -252,18 +275,18 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
           </motion.div>
         </motion.div>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0 flex flex-col">
+      <DialogContent className="max-w-4xl w-full max-h-[90vh] p-0 flex flex-col overflow-y-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 flex-1 min-h-0">
           <div className="relative h-full min-h-[300px] md:min-h-[500px]">
             <Image
               src={poetry.image.imageUrl}
               alt={poetry.title}
               fill
-              className="object-cover rounded-l-lg"
+              className="object-cover md:rounded-l-lg"
               data-ai-hint={poetry.image.imageHint}
             />
           </div>
-          <div className="p-8 flex flex-col overflow-y-auto">
+          <div className="p-8 flex flex-col">
             <DialogHeader>
               <DialogTitle className="font-headline text-4xl mb-4 text-primary">{poetry.title}</DialogTitle>
             </DialogHeader>
@@ -341,7 +364,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                         comments.map((comment) => (
                           <div key={comment.id} className="group/comment text-sm p-2 rounded-md bg-muted flex justify-between items-center">
                             <span>{comment.text}</span>
-                            <Button 
+                            {user && <Button 
                               variant="ghost" 
                               size="icon" 
                               className="h-6 w-6 opacity-0 group-hover/comment:opacity-100"
@@ -349,7 +372,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                               disabled={isCommentActionPending}
                             >
                               <Trash2 className="h-4 w-4 text-destructive/70" />
-                            </Button>
+                            </Button>}
                           </div>
                         ))
                       ) : (
@@ -366,3 +389,5 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
     </Dialog>
   );
 }
+
+    
