@@ -10,16 +10,22 @@ import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { EmailAuthForm } from './email-auth-form';
+import { Button } from '@/components/ui/button';
 
 export default function LoginPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isSignUp, setIsSignUp] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
-      router.push('/admin/upload');
+      if (user.email === 'arorariva19@gmail.com') {
+        router.push('/admin/upload');
+      } else {
+        router.push('/');
+      }
     }
   }, [user, loading, router]);
 
@@ -40,7 +46,11 @@ export default function LoginPage() {
   }, []);
 
   const onAuthSuccess = (user: User) => {
-    router.push('/admin/upload');
+    if (user.email === 'arorariva19@gmail.com') {
+      router.push('/admin/upload');
+    } else {
+      router.push('/');
+    }
   };
 
   const onAuthError = (error: string) => {
@@ -70,14 +80,17 @@ export default function LoginPage() {
             <div className="w-full max-w-sm">
               <div className="text-center mb-6">
                 <h1 className="text-4xl md:text-5xl font-headline font-black text-primary mb-2">
-                  Admin Sign In
+                  {isSignUp ? 'Create an Account' : 'Welcome Back'}
                 </h1>
                 <p className="text-muted-foreground">
-                  Sign in to manage your poetry portfolio.
+                  {isSignUp
+                    ? 'Sign up to start your journey with us.'
+                    : 'Sign in to manage your poetry portfolio.'}
                 </p>
               </div>
 
               <EmailAuthForm
+                isSignUp={isSignUp}
                 onSuccess={onAuthSuccess}
                 onError={onAuthError}
                 setPending={setIsSigningIn}
@@ -86,6 +99,17 @@ export default function LoginPage() {
               {authError && (
                 <p className="text-destructive text-center text-sm mt-4">{authError}</p>
               )}
+
+              <div className="mt-4 text-center text-sm">
+                <Button variant="link" onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setAuthError(null);
+                }}>
+                  {isSignUp
+                    ? 'Already have an account? Sign In'
+                    : "Don't have an account? Sign Up"}
+                </Button>
+              </div>
             </div>
           </div>
         </motion.main>
