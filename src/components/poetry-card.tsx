@@ -231,11 +231,11 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
               data-ai-hint={poetry.image.imageHint}
             />
           </div>
-          <div className="p-8 flex flex-col max-h-[90vh]">
+          <div className="p-8 flex flex-col">
             <DialogHeader>
               <DialogTitle className="font-headline text-4xl mb-4 text-primary">{poetry.title}</DialogTitle>
             </DialogHeader>
-            <div className="flex-grow overflow-y-auto pr-4">
+            <div className="overflow-y-auto pr-4">
               <p className="whitespace-pre-wrap text-foreground/90 leading-relaxed font-body">{poetry.poem}</p>
             </div>
             <div className="mt-6 pt-4 border-t">
