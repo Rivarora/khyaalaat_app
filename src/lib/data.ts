@@ -1,6 +1,7 @@
+
 'use server';
 
-import type { Poetry, Comment } from './definitions';
+import type { Poetry, Comment, UserInfo } from './definitions';
 import { promises as fs } from 'fs';
 import path from 'path';
 
@@ -10,19 +11,33 @@ function isOldCommentFormat(comment: any): comment is string {
   return typeof comment === 'string';
 }
 
+function isOldLikesFormat(likes: any): likes is number {
+    return typeof likes === 'number';
+}
+
 async function readPoetryData(): Promise<Poetry[]> {
   try {
     const fileContent = await fs.readFile(dataFilePath, 'utf-8');
-    const poetryData: Poetry[] = JSON.parse(fileContent);
-    // Ensure comments array exists for each poem and migrate old string comments
+    let poetryData: any[] = JSON.parse(fileContent);
+
+    // Data migration for likes and comments
     return poetryData.map(p => {
+      // Migrate likes from number to UserInfo[]
+      const newLikes = isOldLikesFormat(p.likes) ? [] : (p.likes || []);
+
+      // Migrate comments from string[] or object without user to Comment[]
       const comments = p.comments || [];
-      const migratedComments = comments.map((c, index) => 
-        isOldCommentFormat(c) 
-        ? { id: `${p.id}-comment-${index}-${Date.now()}`, text: c } 
-        : (c.id ? c : { ...c, id: `${p.id}-comment-${index}-${Date.now()}` })
-      );
-      return { ...p, comments: migratedComments };
+      const migratedComments = comments.map((c: any, index: number) => {
+        if (isOldCommentFormat(c)) {
+          return { id: `${p.id}-comment-${index}-${Date.now()}`, text: c, user: { id: 'legacy-user', name: 'Anonymous', photo: null } };
+        }
+        if (!c.user) {
+          return { ...c, id: c.id || `${p.id}-comment-${index}-${Date.now()}`, user: { id: 'legacy-user', name: 'Anonymous', photo: null } };
+        }
+        return c.id ? c : { ...c, id: `${p.id}-comment-${index}-${Date.now()}` };
+      });
+
+      return { ...p, likes: newLikes, comments: migratedComments };
     });
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
@@ -63,22 +78,31 @@ export async function deletePoetryById(poetryId: string): Promise<Poetry | undef
   return poetryToDelete;
 }
 
-export async function updatePoetryLikes(poetryId: string, isLiked: boolean): Promise<void> {
+export async function updatePoetryLikes(poetryId: string, user: UserInfo, isLiked: boolean): Promise<void> {
   const currentData = await readPoetryData();
   const updatedData = currentData.map(p => {
     if (p.id === poetryId) {
-      return { ...p, likes: p.likes + (isLiked ? 1 : -1) };
+      let newLikes = p.likes || [];
+      if (isLiked) {
+        if (!newLikes.some(u => u.id === user.id)) {
+          newLikes.push(user);
+        }
+      } else {
+        newLikes = newLikes.filter(u => u.id !== user.id);
+      }
+      return { ...p, likes: newLikes };
     }
     return p;
   });
   await writePoetryData(updatedData);
 }
 
-export async function addCommentToPoetry(poetryId: string, commentText: string): Promise<void> {
+export async function addCommentToPoetry(poetryId: string, commentText: string, user: UserInfo): Promise<void> {
   const currentData = await readPoetryData();
   const newComment: Comment = {
     id: `${Date.now()}-${Math.random()}`,
     text: commentText,
+    user: user
   };
   const updatedData = currentData.map(p => {
     if (p.id === poetryId) {

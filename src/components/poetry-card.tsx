@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MessageCircle, Send, Share2, Trash2 } from 'lucide-react';
 import { useState, useTransition, useEffect } from 'react';
 
-import type { Poetry, Comment } from '@/lib/definitions';
+import type { Poetry, Comment, UserInfo } from '@/lib/definitions';
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
 import { deletePoetry, likePoetry, addComment, deleteComment } from '@/lib/actions';
@@ -20,6 +20,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useAuth } from './providers/auth-provider';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 type PoetryCardProps = {
   poetry: Poetry;
@@ -33,20 +35,22 @@ const cardVariants = {
 };
 
 export function PoetryCard({ poetry, index }: PoetryCardProps) {
+  const { user } = useAuth();
+  const [likes, setLikes] = useState<UserInfo[]>(poetry.likes || []);
   const [isLiked, setIsLiked] = useState(false);
-  const [likes, setLikes] = useState(poetry.likes);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
   const [isPending, startTransition] = useTransition();
   const [isCommentActionPending, startCommentActionTransition] = useTransition();
-  const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
-    const likedPoems = JSON.parse(localStorage.getItem('likedPoems') || '[]');
-    setIsLiked(likedPoems.includes(poetry.id));
-  }, [poetry.id]);
+    setLikes(poetry.likes || []);
+    if (user) {
+      setIsLiked(poetry.likes?.some(u => u.id === user.uid) || false);
+    }
+  }, [poetry.likes, user]);
   
   useEffect(() => {
     setComments(poetry.comments || []);
@@ -54,30 +58,33 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
-    startTransition(async () => {
-      const likedPoems = JSON.parse(localStorage.getItem('likedPoems') || '[]');
-      const newIsLiked = !isLiked;
-      
-      setIsLiked(newIsLiked);
-      setLikes(newIsLiked ? likes + 1 : likes - 1);
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Login Required', description: 'You must be logged in to like a poem.' });
+      return;
+    }
+    
+    const currentUserInfo: UserInfo = { id: user.uid, name: user.displayName, photo: user.photoURL };
+    const newIsLiked = !isLiked;
 
-      if (newIsLiked) {
-        localStorage.setItem('likedPoems', JSON.stringify([...likedPoems, poetry.id]));
-      } else {
-        localStorage.setItem('likedPoems', JSON.stringify(likedPoems.filter((id: string) => id !== poetry.id)));
-      }
+    startTransition(async () => {
+      // Optimistic update
+      setIsLiked(newIsLiked);
+      setLikes(prevLikes => 
+        newIsLiked 
+        ? [...prevLikes, currentUserInfo] 
+        : prevLikes.filter(u => u.id !== user.uid)
+      );
 
       try {
-        await likePoetry(poetry.id, newIsLiked);
+        await likePoetry(poetry.id, currentUserInfo, newIsLiked);
       } catch (error) {
         // Revert UI changes on error
         setIsLiked(!newIsLiked);
-        setLikes(newIsLiked ? likes - 1 : likes + 1);
-        const originalLikedPoems = newIsLiked 
-          ? likedPoems.filter((id: string) => id !== poetry.id)
-          : [...likedPoems, poetry.id];
-        localStorage.setItem('likedPoems', JSON.stringify(originalLikedPoems));
-        
+        setLikes(prevLikes => 
+          newIsLiked 
+          ? prevLikes.filter(u => u.id !== user.uid)
+          : [...prevLikes, currentUserInfo]
+        );
         toast({
           variant: 'destructive',
           title: 'Error',
@@ -113,18 +120,21 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
   };
 
   const handleAddComment = () => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Login Required', description: 'You must be logged in to comment.' });
+        return;
+    }
     if (newComment.trim()) {
       startCommentActionTransition(async () => {
+        const currentUserInfo: UserInfo = { id: user.uid, name: user.displayName, photo: user.photoURL };
         const tempId = `temp-${Date.now()}`;
-        const optimisticComment: Comment = { id: tempId, text: newComment.trim() };
+        const optimisticComment: Comment = { id: tempId, text: newComment.trim(), user: currentUserInfo };
         
         setComments(prev => [...prev, optimisticComment]);
         setNewComment('');
 
         try {
-          await addComment(poetry.id, newComment.trim());
-          // Ideally, re-fetch comments or get the real comment back from the server action
-          // For now, we'll just let the optimistic one stay, a full page refresh will fix it.
+          await addComment(poetry.id, newComment.trim(), currentUserInfo);
         } catch (error) {
            setComments(prev => prev.filter(c => c.id !== tempId));
            toast({
@@ -155,7 +165,6 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
   };
 
   const handleDelete = async () => {
-    // This action should be protected on the server side as well, but this is a client-side check
     if (!user) {
         toast({
             variant: 'destructive',
@@ -166,7 +175,6 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
     }
     
     startTransition(async () => {
-        // No optimistic deletion needed with AnimatePresence, it handles exit animations
         try {
           await deletePoetry(poetry.id);
           toast({
@@ -226,27 +234,49 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                 <p className="mt-1 text-sm text-white/90 line-clamp-2">{poetry.caption}</p>
               )}
                <div className="flex items-center gap-1 mt-4 text-white">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleLike}
-                    disabled={isPending}
-                    className="hover:bg-white/20 text-white !px-2"
-                  >
-                    <Heart
-                      className={cn(
-                        'mr-2 h-5 w-5 transition-all',
-                        isLiked ? 'fill-red-500 text-red-500' : 'fill-white'
-                      )}
-                    />
-                    {likes}
-                  </Button>
+                 <TooltipProvider delayDuration={100}>
+                   <Tooltip>
+                     <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleLike}
+                            disabled={isPending}
+                            className="hover:bg-white/20 text-white !px-2"
+                          >
+                            <Heart
+                              className={cn(
+                                'mr-2 h-5 w-5 transition-all',
+                                isLiked ? 'fill-red-500 text-red-500' : 'fill-white'
+                              )}
+                            />
+                            {likes.length}
+                          </Button>
+                     </TooltipTrigger>
+                     {likes.length > 0 && (
+                        <TooltipContent side="top" className="bg-black/70 text-white border-none">
+                            <div className="flex items-center gap-2">
+                                {likes.slice(0, 5).map(u => (
+                                    <Avatar key={u.id} className="h-6 w-6">
+                                        <AvatarImage src={u.photo || ''} alt={u.name || 'User'} />
+                                        <AvatarFallback>{u.name?.charAt(0) || 'U'}</AvatarFallback>
+                                    </Avatar>
+                                ))}
+                                <p className="text-xs">
+                                    {likes[0].name}
+                                    {likes.length > 1 && ` and ${likes.length - 1} others`}
+                                </p>
+                            </div>
+                        </TooltipContent>
+                     )}
+                   </Tooltip>
+                 </TooltipProvider>
+
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={(e) => {
                         e.stopPropagation();
-                        // This will trigger the dialog, and we want to see comments there
                         document.querySelector(`[data-trigger-id="${poetry.id}"]`)?.click();
                         setTimeout(() => setShowComments(true), 150);
                     }}
@@ -312,21 +342,43 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                   >
                     <MessageCircle className="h-5 w-5" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => { e.stopPropagation(); handleLike(e); }}
-                    disabled={isPending}
-                    className="hover:bg-accent/50"
-                  >
-                    <Heart
-                      className={cn(
-                        'mr-2 h-5 w-5 transition-all',
-                        isLiked ? 'fill-red-500 text-red-500' : 'fill-muted-foreground'
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => { e.stopPropagation(); handleLike(e); }}
+                          disabled={isPending}
+                          className="hover:bg-accent/50"
+                        >
+                          <Heart
+                            className={cn(
+                              'mr-2 h-5 w-5 transition-all',
+                              isLiked ? 'fill-red-500 text-red-500' : 'fill-muted-foreground'
+                            )}
+                          />
+                          {likes.length}
+                        </Button>
+                      </TooltipTrigger>
+                      {likes.length > 0 && (
+                          <TooltipContent side="top">
+                              <div className="flex items-center gap-2">
+                                  {likes.slice(0, 5).map(u => (
+                                      <Avatar key={u.id} className="h-6 w-6">
+                                          <AvatarImage src={u.photo || ''} alt={u.name || 'User'} />
+                                          <AvatarFallback>{u.name?.charAt(0) || 'U'}</AvatarFallback>
+                                      </Avatar>
+                                  ))}
+                                  <p className="text-xs">
+                                      {likes[0].name}
+                                      {likes.length > 1 && ` and ${likes.length - 1} others`}
+                                  </p>
+                              </div>
+                          </TooltipContent>
                       )}
-                    />
-                    {likes}
-                  </Button>
+                    </Tooltip>
+                  </TooltipProvider>
                 </motion.div>
               </div>
               <AnimatePresence>
@@ -339,24 +391,33 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                   >
                     <div className="flex items-center gap-2 mb-4">
                       <Input
-                        placeholder="Add a comment..."
+                        placeholder={user ? "Add a comment..." : "Login to comment..."}
                         value={newComment}
                         onChange={(e) => { e.stopPropagation(); setNewComment(e.target.value); }}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); handleAddComment(); } }}
-                        disabled={isCommentActionPending}
+                        disabled={isCommentActionPending || !user}
                         className="flex-1"
                         onClick={(e) => e.stopPropagation()}
                       />
-                      <Button onClick={(e) => { e.stopPropagation(); handleAddComment(); }} size="icon" disabled={isCommentActionPending}>
+                      <Button onClick={(e) => { e.stopPropagation(); handleAddComment(); }} size="icon" disabled={isCommentActionPending || !user}>
                         <Send className="h-4 w-4" />
                       </Button>
                     </div>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                    <div className="space-y-4 max-h-40 overflow-y-auto">
                       {comments && comments.length > 0 ? (
                         comments.map((comment) => (
-                          <div key={comment.id} className="group/comment text-sm p-2 rounded-md bg-muted flex justify-between items-center">
-                            <span>{comment.text}</span>
-                            {user && <Button 
+                          <div key={comment.id} className="group/comment text-sm p-2 rounded-md flex justify-between items-start">
+                            <div className="flex items-start gap-3">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={comment.user.photo || ''} alt={comment.user.name || 'User'}/>
+                                    <AvatarFallback>{comment.user.name?.charAt(0) || 'A'}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="font-semibold">{comment.user.name || 'Anonymous'}</p>
+                                    <p className="text-muted-foreground">{comment.text}</p>
+                                </div>
+                            </div>
+                            {user && (user.uid === comment.user.id || user.email === 'arorariva19@gmail.com') && <Button 
                               variant="ghost" 
                               size="icon" 
                               className="h-6 w-6 opacity-0 group-hover/comment:opacity-100"
@@ -381,5 +442,3 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
     </Dialog>
   );
 }
-
-    

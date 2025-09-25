@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import { addPoetry, deletePoetryById, updatePoetryLikes, addCommentToPoetry, deleteCommentFromPoetry } from './data';
-import type { Poetry } from './definitions';
+import type { Poetry, UserInfo } from './definitions';
 
 const uploadSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters.'),
@@ -67,7 +67,7 @@ export async function uploadPoetry(prevState: any, formData: FormData) {
       imageHint: 'poetry image',
       description: title,
     },
-    likes: 0,
+    likes: [],
     comments: [],
   };
 
@@ -84,8 +84,10 @@ export async function deletePoetry(poetryId: string) {
   if (deletedPoetry) {
     // Delete the image file from the server
     try {
-      const imagePath = join(process.cwd(), 'public', deletedPoetry.image.imageUrl);
-      await unlink(imagePath);
+      if (deletedPoetry.image.imageUrl.startsWith('/uploads/')) {
+        const imagePath = join(process.cwd(), 'public', deletedPoetry.image.imageUrl);
+        await unlink(imagePath);
+      }
     } catch (error) {
       // Log the error but don't block the response.
       // The image might not exist, or there could be a permissions issue.
@@ -96,13 +98,13 @@ export async function deletePoetry(poetryId: string) {
   revalidatePath('/');
 }
 
-export async function likePoetry(poetryId: string, isLiked: boolean) {
-  await updatePoetryLikes(poetryId, isLiked);
+export async function likePoetry(poetryId: string, user: UserInfo, isLiked: boolean) {
+  await updatePoetryLikes(poetryId, user, isLiked);
   revalidatePath('/');
 }
 
-export async function addComment(poetryId: string, comment: string) {
-  await addCommentToPoetry(poetryId, comment);
+export async function addComment(poetryId: string, comment: string, user: UserInfo) {
+  await addCommentToPoetry(poetryId, comment, user);
   revalidatePath('/');
 }
 
