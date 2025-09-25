@@ -26,6 +26,11 @@ type PoetryCardProps = {
   index: number;
 };
 
+const cardVariants = {
+  hidden: { opacity: 0, y: 50 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+
 export function PoetryCard({ poetry, index }: PoetryCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [likes, setLikes] = useState(poetry.likes);
@@ -189,9 +194,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
         <motion.div
           data-trigger-id={poetry.id}
           className="group relative block w-full cursor-pointer overflow-hidden rounded-lg break-inside-avoid shadow-lg bg-card"
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: index * 0.1 }}
+          variants={cardVariants}
           exit={{ opacity: 0, y: -20 }}
           layout
           whileHover={{ y: -5, scale: 1.02, transition: { duration: 0.2 } }}
@@ -222,14 +225,9 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
               </div>
             )}
             <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-              <motion.h3
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.3, delay: index * 0.1 + 0.3 }}
-                className="text-2xl font-headline font-bold text-white drop-shadow-lg"
-              >
+              <h3 className="text-2xl font-headline font-bold text-white drop-shadow-lg">
                 {poetry.title}
-              </motion.h3>
+              </h3>
               {poetry.caption && (
                 <p className="mt-1 text-sm text-white/90 line-clamp-2">{poetry.caption}</p>
               )}
@@ -275,7 +273,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
           </motion.div>
         </motion.div>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl w-full max-h-[90vh] p-0 flex flex-col overflow-y-auto">
+      <DialogContent className="max-w-4xl w-full p-0 flex flex-col max-h-[90vh] overflow-y-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 flex-1 min-h-0">
           <div className="relative h-full min-h-[300px] md:min-h-[500px]">
             <Image
@@ -290,7 +288,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
             <DialogHeader>
               <DialogTitle className="font-headline text-4xl mb-4 text-primary">{poetry.title}</DialogTitle>
             </DialogHeader>
-            <div className="flex-grow">
+            <div className="flex-grow overflow-y-auto pr-4">
               <p className="whitespace-pre-wrap text-foreground/90 leading-relaxed font-body">{poetry.poem}</p>
             </div>
             <div className="mt-6 pt-4 border-t">

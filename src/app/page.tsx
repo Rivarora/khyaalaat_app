@@ -7,9 +7,24 @@ import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import type { Poetry } from '@/lib/definitions';
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
 function PoetryList({ poetryData }: { poetryData: Poetry[] }) {
   return (
-    <div className="columns-1 gap-6 space-y-6 md:columns-2 lg:columns-3 xl:columns-4">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="columns-1 gap-6 space-y-6 md:columns-2 lg:columns-3 xl:columns-4"
+    >
       {poetryData.length > 0 ? (
         poetryData.map((poetry, index) => (
           <PoetryCard key={poetry.id} poetry={poetry} index={index} />
@@ -20,7 +35,7 @@ function PoetryList({ poetryData }: { poetryData: Poetry[] }) {
           <p>Uploaded poems will appear here.</p>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
