@@ -22,7 +22,11 @@ const storage = getStorage(app);
 
 // It's good practice to check if we're in a browser environment before initializing analytics
 if (typeof window !== 'undefined') {
-  getAnalytics(app);
+  try {
+    getAnalytics(app);
+  } catch (error) {
+    console.log('Could not initialize Analytics', error);
+  }
 }
 
 
