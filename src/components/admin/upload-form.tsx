@@ -30,6 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { storage } from '@/lib/firebase';
 import { uploadPoetry } from '@/lib/actions';
 import { Progress } from '@/components/ui/progress';
+import { Label } from '@/components/ui/label';
 
 const formSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters.'),
