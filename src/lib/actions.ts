@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { addPoetry, deletePoetryById, updatePoetryLikes, addCommentToPoetry, deleteCommentFromPoetry } from './data';
 import type { Poetry, UserInfo } from './definitions';
 import { storage } from './firebase';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 
 
 const uploadSchema = z.object({
@@ -63,15 +63,30 @@ export async function uploadPoetry(prevState: any, formData: FormData): Promise<
     imagePath = `poetry-images/${filename}`;
     const storageRef = ref(storage, imagePath);
 
-    await uploadBytes(storageRef, buffer, {
+    const uploadTask = uploadBytesResumable(storageRef, buffer, {
       contentType: image.type,
     });
 
-    imageUrl = await getDownloadURL(storageRef);
+    await new Promise<void>((resolve, reject) => {
+      uploadTask.on('state_changed',
+        (snapshot) => {
+          // Optional: handle progress
+        },
+        (error) => {
+          console.error('Upload failed:', error);
+          reject(error);
+        },
+        () => {
+          resolve();
+        }
+      );
+    });
+    
+    imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
 
   } catch (error) {
     console.error('Failed to upload image:', error);
-    return { message: 'Error: Could not save image.' };
+    return { message: 'Error: Could not save image. Check storage rules.' };
   }
 
 
