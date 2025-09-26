@@ -116,6 +116,7 @@ export async function deleteCommentFromPoetry(poetryId: string, commentId: strin
         if(commentToDelete){
             await updateDoc(docRef, {
                 comments: arrayRemove(commentToDelete),
+                likes: poetry.likes || [],
             });
         }
     }
