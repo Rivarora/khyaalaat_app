@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { addPoetry, deletePoetryById, updatePoetryLikes, addCommentToPoetry, deleteCommentFromPoetry } from './data';
 import type { Poetry, UserInfo } from './definitions';
 import { storage } from './firebase';
-import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref, deleteObject } from 'firebase/storage';
 
 
 const uploadSchema = z.object({
@@ -19,61 +19,25 @@ const uploadSchema = z.object({
 });
 
 type UploadState = {
-  message: string | null;
-  errors?: {
-    title?: string[];
-    caption?: string[];
-    poem?: string[];
-    genre?: string[];
-    mood?: string[];
-    tags?: string[];
-  };
+  success: boolean;
+  message: string;
 };
 
-export async function uploadPoetry(prevState: any, formData: FormData): Promise<UploadState> {
-  const validatedFields = uploadSchema.safeParse({
-    title: formData.get('title'),
-    caption: formData.get('caption'),
-    poem: formData.get('poem'),
-    genre: formData.get('genre'),
-    mood: formData.get('mood'),
-    tags: formData.get('tags'),
-  });
+export async function uploadPoetry(
+  values: z.infer<typeof uploadSchema>,
+  imageUrl: string,
+  imagePath: string
+): Promise<UploadState> {
+  const validatedFields = uploadSchema.safeParse(values);
 
   if (!validatedFields.success) {
     return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Error: Please check the form fields.',
+      success: false,
+      message: 'Error: Invalid data provided.',
     };
   }
 
   const { title, genre, caption, poem } = validatedFields.data;
-  const image = formData.get('image') as File;
-  
-  if (!image || image.size === 0) {
-    return { message: 'Error: Image is required.' };
-  }
-
-  let imageUrl = '';
-  let imagePath = '';
-
-  try {
-    const buffer = Buffer.from(await image.arrayBuffer());
-    const filename = `${Date.now()}-${image.name}`;
-    imagePath = `poetry-images/${filename}`;
-    const storageRef = ref(storage, imagePath);
-
-    await uploadBytesResumable(storageRef, buffer, {
-      contentType: image.type,
-    });
-    
-    imageUrl = await getDownloadURL(storageRef);
-
-  } catch (error) {
-    console.error('Failed to upload image:', error);
-    return { message: 'Error: Could not save image. Check storage rules.' };
-  }
-
 
   const newPoetry: Omit<Poetry, 'id'> = {
     title,
@@ -96,13 +60,13 @@ export async function uploadPoetry(prevState: any, formData: FormData): Promise<
     await addPoetry(newPoetry);
   } catch (error) {
      console.error('Failed to add poetry to database:', error);
-     return { message: 'Error: Could not save poetry data.' };
+     return { success: false, message: 'Error: Could not save poetry data.' };
   }
 
   revalidatePath('/');
   revalidatePath('/admin/upload');
 
-  return { message: `Poetry "${title}" uploaded successfully!` };
+  return { success: true, message: `Poetry "${title}" uploaded successfully!` };
 }
 
 export async function deletePoetry(poetryId: string) {
@@ -134,4 +98,3 @@ export async function deleteComment(poetryId: string, commentId: string) {
   await deleteCommentFromPoetry(poetryId, commentId);
   revalidatePath('/');
 }
-
