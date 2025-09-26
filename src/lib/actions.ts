@@ -63,26 +63,11 @@ export async function uploadPoetry(prevState: any, formData: FormData): Promise<
     imagePath = `poetry-images/${filename}`;
     const storageRef = ref(storage, imagePath);
 
-    const uploadTask = uploadBytesResumable(storageRef, buffer, {
+    await uploadBytesResumable(storageRef, buffer, {
       contentType: image.type,
     });
-
-    await new Promise<void>((resolve, reject) => {
-      uploadTask.on('state_changed',
-        (snapshot) => {
-          // Optional: handle progress
-        },
-        (error) => {
-          console.error('Upload failed:', error);
-          reject(error);
-        },
-        () => {
-          resolve();
-        }
-      );
-    });
     
-    imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
+    imageUrl = await getDownloadURL(storageRef);
 
   } catch (error) {
     console.error('Failed to upload image:', error);
@@ -149,3 +134,4 @@ export async function deleteComment(poetryId: string, commentId: string) {
   await deleteCommentFromPoetry(poetryId, commentId);
   revalidatePath('/');
 }
+
