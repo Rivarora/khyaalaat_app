@@ -21,7 +21,7 @@ const formSchema = z.object({
   }),
 });
 
-export type PoemRequest = z.infer<typeof formSchema>;
+export type PoemRequestForm = z.infer<typeof formSchema>;
 
 type ActionResult = {
   success: boolean;
@@ -29,7 +29,7 @@ type ActionResult = {
 };
 
 export async function sendRequest(
-  values: PoemRequest
+  values: PoemRequestForm
 ): Promise<ActionResult> {
   const validatedValues = formSchema.safeParse(values);
 
@@ -38,15 +38,8 @@ export async function sendRequest(
   }
 
   try {
-    const newRequest = {
-      id: Date.now().toString(),
-      ...validatedValues.data,
-      createdAt: new Date().toISOString(),
-      completed: false,
-    };
-    
-    await addRequest(newRequest);
-    
+    await addRequest(validatedValues.data);
+    revalidatePath('/requests');
     return { success: true };
   } catch (error) {
     console.error('Error sending request:', error);

@@ -128,7 +128,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
       startCommentActionTransition(async () => {
         const currentUserInfo: UserInfo = { id: user.uid, name: user.displayName, photo: user.photoURL };
         const tempId = `temp-${Date.now()}`;
-        const optimisticComment: Comment = { id: tempId, text: newComment.trim(), user: currentUserInfo };
+        const optimisticComment: Comment = { id: tempId, text: newComment.trim(), user: currentUserInfo, createdAt: new Date() };
         
         setComments(prev => [...prev, optimisticComment]);
         setNewComment('');
@@ -164,8 +164,9 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
     });
   };
 
-  const handleDelete = async () => {
-    if (!user) {
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user || user.email !== 'arorariva19@gmail.com') {
         toast({
             variant: 'destructive',
             title: 'Unauthorized',
@@ -211,15 +212,12 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
               data-ai-hint={poetry.image.imageHint}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
-            {user && (
+            {user && user.email === 'arorariva19@gmail.com' && (
               <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete();
-                  }}
+                  onClick={handleDelete}
                   className="text-white bg-black/30 hover:bg-red-500/50 hover:text-white rounded-full"
                 >
                   <Trash2 className="h-5 w-5" />

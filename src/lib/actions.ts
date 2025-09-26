@@ -3,10 +3,11 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { writeFile, mkdir, unlink } from 'fs/promises';
-import { join } from 'path';
 import { addPoetry, deletePoetryById, updatePoetryLikes, addCommentToPoetry, deleteCommentFromPoetry } from './data';
 import type { Poetry, UserInfo } from './definitions';
+import { storage } from './firebase';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+
 
 const uploadSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters.'),
@@ -35,45 +36,54 @@ export async function uploadPoetry(prevState: any, formData: FormData) {
   }
 
   const { title, genre, caption, poem } = validatedFields.data;
-
   const image = formData.get('image') as File;
+  
   if (!image || image.size === 0) {
     return { message: 'Error: Image is required.' };
   }
 
-  const buffer = Buffer.from(await image.arrayBuffer());
-  const filename = `${Date.now()}-${image.name}`;
-  const uploadDir = join(process.cwd(), 'public', 'uploads');
-  const imagePath = `/uploads/${filename}`;
-  const fullPath = join(uploadDir, filename);
+  let imageUrl = '';
+  let imagePath = '';
 
   try {
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(fullPath, buffer);
+    const buffer = Buffer.from(await image.arrayBuffer());
+    const filename = `${Date.now()}-${image.name}`;
+    imagePath = `poetry-images/${filename}`;
+    const storageRef = ref(storage, imagePath);
+
+    await uploadBytes(storageRef, buffer, {
+      contentType: image.type,
+    });
+
+    imageUrl = await getDownloadURL(storageRef);
+
   } catch (error) {
-    console.error('Failed to write file:', error);
+    console.error('Failed to upload image:', error);
     return { message: 'Error: Could not save image.' };
   }
 
-  const newPoetry: Poetry = {
-    id: Date.now().toString(),
+
+  const newPoetry: Omit<Poetry, 'id'> = {
     title,
     genre,
     caption,
     poem,
     image: {
       id: Date.now().toString(),
-      imageUrl: imagePath,
+      imageUrl: imageUrl,
+      imagePath: imagePath,
       imageHint: 'poetry image',
       description: title,
     },
     likes: [],
     comments: [],
+    createdAt: new Date(),
   };
 
   await addPoetry(newPoetry);
 
   revalidatePath('/');
+  revalidatePath('/admin/upload');
 
   return { message: `Poetry "${title}" uploaded successfully!` };
 }
@@ -81,17 +91,12 @@ export async function uploadPoetry(prevState: any, formData: FormData) {
 export async function deletePoetry(poetryId: string) {
   const deletedPoetry = await deletePoetryById(poetryId);
 
-  if (deletedPoetry) {
-    // Delete the image file from the server
+  if (deletedPoetry && deletedPoetry.image.imagePath) {
     try {
-      if (deletedPoetry.image.imageUrl.startsWith('/uploads/')) {
-        const imagePath = join(process.cwd(), 'public', deletedPoetry.image.imageUrl);
-        await unlink(imagePath);
-      }
+      const imageRef = ref(storage, deletedPoetry.image.imagePath);
+      await deleteObject(imageRef);
     } catch (error) {
-      // Log the error but don't block the response.
-      // The image might not exist, or there could be a permissions issue.
-      console.error(`Failed to delete image file: ${deletedPoetry.image.imageUrl}`, error);
+      console.error(`Failed to delete image from storage: ${deletedPoetry.image.imagePath}`, error);
     }
   }
 

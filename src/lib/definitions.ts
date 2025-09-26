@@ -1,5 +1,13 @@
 
-import type { ImagePlaceholder } from './placeholder-images';
+import type { Timestamp } from 'firebase/firestore';
+
+export type ImagePlaceholder = {
+  id: string;
+  description: string;
+  imageUrl: string;
+  imageHint: string;
+  imagePath?: string; // Path in Firebase Storage
+};
 
 export type UserInfo = {
   id: string;
@@ -11,6 +19,7 @@ export type Comment = {
   id: string;
   text: string;
   user: UserInfo;
+  createdAt: Date | Timestamp;
 }
 
 export type Poetry = {
@@ -22,6 +31,7 @@ export type Poetry = {
   caption?: string; // Optional short preview
   poem: string; // Full poem text
   comments: Comment[];
+  createdAt: Date | Timestamp;
 };
 
 export type PoemRequest = {

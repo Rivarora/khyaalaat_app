@@ -2,126 +2,129 @@
 'use server';
 
 import type { Poetry, Comment, UserInfo } from './definitions';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { db } from './firebase';
+import {
+  collection,
+  getDocs,
+  addDoc,
+  deleteDoc,
+  doc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+  query,
+  orderBy,
+  serverTimestamp,
+  Timestamp,
+  getDoc,
+} from 'firebase/firestore';
 
-const dataFilePath = path.join(process.cwd(), 'src', 'lib', 'poetry.json');
+const poetryCollection = collection(db, 'poetry');
 
-function isOldCommentFormat(comment: any): comment is string {
-  return typeof comment === 'string';
+function poetryFromDoc(doc: any): Poetry {
+    const data = doc.data();
+    return {
+        id: doc.id,
+        ...data,
+        // Convert Firestore Timestamps to JS Date objects
+        createdAt: data.createdAt?.toDate(),
+        comments: data.comments?.map((c: any) => ({
+            ...c,
+            createdAt: c.createdAt?.toDate(),
+        })) || [],
+    };
 }
 
-function isOldLikesFormat(likes: any): likes is number {
-    return typeof likes === 'number';
-}
 
-async function readPoetryData(): Promise<Poetry[]> {
+export async function getPoetryData(): Promise<Poetry[]> {
   try {
-    const fileContent = await fs.readFile(dataFilePath, 'utf-8');
-    let poetryData: any[] = JSON.parse(fileContent);
-
-    // Data migration for likes and comments
-    return poetryData.map(p => {
-      // Migrate likes from number to UserInfo[]
-      const newLikes = isOldLikesFormat(p.likes) ? [] : (p.likes || []);
-
-      // Migrate comments from string[] or object without user to Comment[]
-      const comments = p.comments || [];
-      const migratedComments = comments.map((c: any, index: number) => {
-        if (isOldCommentFormat(c)) {
-          return { id: `${p.id}-comment-${index}-${Date.now()}`, text: c, user: { id: 'legacy-user', name: 'Anonymous', photo: null } };
-        }
-        if (!c.user) {
-          return { ...c, id: c.id || `${p.id}-comment-${index}-${Date.now()}`, user: { id: 'legacy-user', name: 'Anonymous', photo: null } };
-        }
-        return c.id ? c : { ...c, id: `${p.id}-comment-${index}-${Date.now()}` };
-      });
-
-      return { ...p, likes: newLikes, comments: migratedComments };
-    });
+    const q = query(poetryCollection, orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(poetryFromDoc);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      try {
-        await fs.writeFile(dataFilePath, JSON.stringify([]));
-      } catch (writeError) {
-        console.error('Error creating poetry data file:', writeError);
-      }
-      return [];
-    }
-    console.error('Error reading poetry data:', error);
+    console.error('Error reading poetry data from Firestore:', error);
     return [];
   }
 }
 
-async function writePoetryData(data: Poetry[]): Promise<void> {
-  await fs.writeFile(dataFilePath, JSON.stringify(data, null, 2));
-}
-
-export async function getPoetryData(): Promise<Poetry[]> {
-  return readPoetryData();
-}
-
-export async function addPoetry(poetry: Poetry) {
-  const currentData = await readPoetryData();
-  currentData.unshift(poetry);
-  await writePoetryData(currentData);
+export async function addPoetry(poetry: Omit<Poetry, 'id'>) {
+  try {
+    await addDoc(poetryCollection, {
+      ...poetry,
+      createdAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error adding poetry to Firestore:', error);
+  }
 }
 
 export async function deletePoetryById(poetryId: string): Promise<Poetry | undefined> {
-  const currentData = await readPoetryData();
-  const poetryToDelete = currentData.find(p => p.id === poetryId);
-  if (!poetryToDelete) {
+  try {
+    const docRef = doc(db, 'poetry', poetryId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const poetryData = poetryFromDoc(docSnap);
+      await deleteDoc(docRef);
+      return poetryData;
+    }
+    return undefined;
+  } catch (error) {
+    console.error('Error deleting poetry from Firestore:', error);
     return undefined;
   }
-  const updatedData = currentData.filter(p => p.id !== poetryId);
-  await writePoetryData(updatedData);
-  return poetryToDelete;
 }
 
 export async function updatePoetryLikes(poetryId: string, user: UserInfo, isLiked: boolean): Promise<void> {
-  const currentData = await readPoetryData();
-  const updatedData = currentData.map(p => {
-    if (p.id === poetryId) {
-      let newLikes = p.likes || [];
-      if (isLiked) {
-        if (!newLikes.some(u => u.id === user.id)) {
-          newLikes.push(user);
-        }
-      } else {
-        newLikes = newLikes.filter(u => u.id !== user.id);
-      }
-      return { ...p, likes: newLikes };
+  try {
+    const docRef = doc(db, 'poetry', poetryId);
+    if (isLiked) {
+      await updateDoc(docRef, {
+        likes: arrayUnion(user),
+      });
+    } else {
+      await updateDoc(docRef, {
+        likes: arrayRemove(user),
+      });
     }
-    return p;
-  });
-  await writePoetryData(updatedData);
+  } catch (error) {
+    console.error('Error updating likes in Firestore:', error);
+  }
 }
 
 export async function addCommentToPoetry(poetryId: string, commentText: string, user: UserInfo): Promise<void> {
-  const currentData = await readPoetryData();
-  const newComment: Comment = {
-    id: `${Date.now()}-${Math.random()}`,
-    text: commentText,
-    user: user
-  };
-  const updatedData = currentData.map(p => {
-    if (p.id === poetryId) {
-      const newComments = p.comments ? [...p.comments, newComment] : [newComment];
-      return { ...p, comments: newComments };
-    }
-    return p;
-  });
-  await writePoetryData(updatedData);
+  try {
+    const docRef = doc(db, 'poetry', poetryId);
+    const newComment = {
+      id: `${Date.now()}-${Math.random()}`,
+      text: commentText,
+      user: user,
+      createdAt: Timestamp.now(),
+    };
+    await updateDoc(docRef, {
+      comments: arrayUnion(newComment),
+    });
+  } catch (error) {
+    console.error('Error adding comment in Firestore:', error);
+  }
 }
 
 export async function deleteCommentFromPoetry(poetryId: string, commentId: string): Promise<void> {
-  const currentData = await readPoetryData();
-  const updatedData = currentData.map(p => {
-    if (p.id === poetryId) {
-      const newComments = p.comments.filter(c => c.id !== commentId);
-      return { ...p, comments: newComments };
+  try {
+    const docRef = doc(db, 'poetry', poetryId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        const poetry = docSnap.data() as Poetry;
+        const commentToDelete = poetry.comments.find(c => c.id === commentId);
+
+        if(commentToDelete){
+            await updateDoc(docRef, {
+                comments: arrayRemove(commentToDelete),
+            });
+        }
     }
-    return p;
-  });
-  await writePoetryData(updatedData);
+  } catch (error) {
+    console.error('Error deleting comment from Firestore:', error);
+  }
 }

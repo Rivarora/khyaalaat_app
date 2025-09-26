@@ -1,57 +1,69 @@
+
 'use server';
 
 import type { PoemRequest } from './definitions';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { db } from './firebase';
+import {
+  collection,
+  getDocs,
+  addDoc,
+  deleteDoc,
+  doc,
+  updateDoc,
+  query,
+  orderBy,
+  serverTimestamp,
+} from 'firebase/firestore';
 
-const dataFilePath = path.join(process.cwd(), 'src', 'lib', 'requests.json');
+const requestsCollection = collection(db, 'requests');
 
-async function readRequestData(): Promise<PoemRequest[]> {
-  try {
-    const fileContent = await fs.readFile(dataFilePath, 'utf-8');
-    const data = JSON.parse(fileContent);
-    // Ensure all requests have a 'completed' field
-    return data.map((req: any) => ({ ...req, completed: req.completed ?? false }));
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      try {
-        await fs.writeFile(dataFilePath, JSON.stringify([]));
-      } catch (writeError) {
-        console.error('Error creating request data file:', writeError);
-      }
-      return [];
-    }
-    console.error('Error reading request data:', error);
-    return [];
-  }
+function requestFromDoc(doc: any): PoemRequest {
+    const data = doc.data();
+    return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate().toISOString(),
+    };
 }
 
-async function writeRequestData(data: PoemRequest[]): Promise<void> {
-  await fs.writeFile(dataFilePath, JSON.stringify(data, null, 2));
-}
 
 export async function getRequests(): Promise<PoemRequest[]> {
-  const requests = await readRequestData();
-  // Sort by most recent first
-  return requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    try {
+        const q = query(requestsCollection, orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(requestFromDoc);
+    } catch (error) {
+        console.error('Error getting requests from Firestore:', error);
+        return [];
+    }
 }
 
-export async function addRequest(request: PoemRequest) {
-  const currentData = await readRequestData();
-  currentData.unshift(request);
-  await writeRequestData(currentData);
+export async function addRequest(request: Omit<PoemRequest, 'id' | 'createdAt' | 'completed'>) {
+    try {
+        await addDoc(requestsCollection, {
+            ...request,
+            completed: false,
+            createdAt: serverTimestamp(),
+        });
+    } catch (error) {
+        console.error('Error adding request to Firestore:', error);
+    }
 }
 
 export async function updateRequestStatus(id: string, completed: boolean): Promise<void> {
-  const requests = await readRequestData();
-  const updatedRequests = requests.map(req => 
-    req.id === id ? { ...req, completed } : req
-  );
-  await writeRequestData(updatedRequests);
+    try {
+        const docRef = doc(db, 'requests', id);
+        await updateDoc(docRef, { completed });
+    } catch (error) {
+        console.error('Error updating request status in Firestore:', error);
+    }
 }
 
 export async function deleteRequestById(id: string): Promise<void> {
-  let requests = await readRequestData();
-  requests = requests.filter(req => req.id !== id);
-  await writeRequestData(requests);
+    try {
+        const docRef = doc(db, 'requests', id);
+        await deleteDoc(docRef);
+    } catch (error) {
+        console.error('Error deleting request from Firestore:', error);
+    }
 }
