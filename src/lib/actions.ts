@@ -18,7 +18,19 @@ const uploadSchema = z.object({
   tags: z.string().optional(),
 });
 
-export async function uploadPoetry(prevState: any, formData: FormData) {
+type UploadState = {
+  message: string | null;
+  errors?: {
+    title?: string[];
+    caption?: string[];
+    poem?: string[];
+    genre?: string[];
+    mood?: string[];
+    tags?: string[];
+  };
+};
+
+export async function uploadPoetry(prevState: any, formData: FormData): Promise<UploadState> {
   const validatedFields = uploadSchema.safeParse({
     title: formData.get('title'),
     caption: formData.get('caption'),
@@ -80,7 +92,12 @@ export async function uploadPoetry(prevState: any, formData: FormData) {
     createdAt: new Date(),
   };
 
-  await addPoetry(newPoetry);
+  try {
+    await addPoetry(newPoetry);
+  } catch (error) {
+     console.error('Failed to add poetry to database:', error);
+     return { message: 'Error: Could not save poetry data.' };
+  }
 
   revalidatePath('/');
   revalidatePath('/admin/upload');

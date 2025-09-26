@@ -32,19 +32,21 @@ function SubmitButton() {
 }
 
 export function UploadForm() {
-  const initialState = { message: '', errors: {} };
+  const initialState = { message: null, errors: {} };
   const [state, dispatch] = useActionState(uploadPoetry, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    if (state?.message?.startsWith('Error')) {
+    if (!state.message) return;
+
+    if (state.message.startsWith('Error')) {
       toast({
         title: 'Upload Failed',
         description: state.message,
         variant: 'destructive',
       });
-    } else if (state?.message) {
+    } else {
       toast({
         title: 'Upload Successful',
         description: state.message,
@@ -69,7 +71,6 @@ export function UploadForm() {
           <div className="space-y-2">
             <Label htmlFor="image">Poetry Image</Label>
             <Input id="image" name="image" type="file" accept="image/*" required />
-            {state?.errors?.image && <p className="text-sm text-destructive">{state.errors.image}</p>}
           </div>
 
           <div className="space-y-2">
