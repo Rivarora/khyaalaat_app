@@ -1,4 +1,3 @@
-
 'use server';
 
 import type { Poetry, Comment, UserInfo } from './definitions';
@@ -48,14 +47,10 @@ export async function getPoetryData(): Promise<Poetry[]> {
 }
 
 export async function addPoetry(poetry: Omit<Poetry, 'id'>) {
-  try {
     await addDoc(poetryCollection, {
       ...poetry,
       createdAt: serverTimestamp(),
     });
-  } catch (error) {
-    console.error('Error adding poetry to Firestore:', error);
-  }
 }
 
 export async function deletePoetryById(poetryId: string): Promise<Poetry | undefined> {

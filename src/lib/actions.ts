@@ -1,4 +1,3 @@
-
 'use server';
 
 import { z } from 'zod';
@@ -37,13 +36,15 @@ export async function uploadPoetry(
     };
   }
 
-  const { title, genre, caption, poem } = validatedFields.data;
+  const { title, genre, caption, poem, mood, tags } = validatedFields.data;
 
   const newPoetry: Omit<Poetry, 'id'> = {
     title,
     genre,
     caption,
     poem,
+    mood,
+    tags,
     image: {
       id: Date.now().toString(),
       imageUrl: imageUrl,
@@ -58,9 +59,9 @@ export async function uploadPoetry(
 
   try {
     await addPoetry(newPoetry);
-  } catch (error) {
+  } catch (error: any) {
      console.error('Failed to add poetry to database:', error);
-     return { success: false, message: 'Error: Could not save poetry data.' };
+     return { success: false, message: `Error: Could not save poetry data. ${error.message}` };
   }
 
   revalidatePath('/');

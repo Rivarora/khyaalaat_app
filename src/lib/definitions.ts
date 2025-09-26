@@ -30,6 +30,8 @@ export type Poetry = {
   genre: 'Love' | 'Sad' | 'Motivational' | 'Nature' | 'Other';
   caption?: string; // Optional short preview
   poem: string; // Full poem text
+  mood?: string;
+  tags?: string;
   comments: Comment[];
   createdAt: Date | Timestamp;
 };
