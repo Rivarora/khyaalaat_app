@@ -415,7 +415,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                                     <p className="text-muted-foreground">{comment.text}</p>
                                 </div>
                             </div>
-                            {user && (user.uid === comment.user.id || user.email === 'arorariva19@gmail.com') && <Button 
+                            {user && (user.uid === comment.user.id || isAdmin) && <Button 
                               variant="ghost" 
                               size="icon" 
                               className="h-6 w-6 opacity-0 group-hover/comment:opacity-100"
