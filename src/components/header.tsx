@@ -8,7 +8,7 @@ import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
 function AuthButton() {
-  const { user, loading } = useAuth();
+  const { user, userDoc, loading, isAdmin } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -20,9 +20,19 @@ function AuthButton() {
 
   if (user) {
     return (
-      <Button onClick={handleLogout} variant="ghost">
-        Logout
-      </Button>
+      <div className="flex items-center gap-2">
+        {isAdmin && (
+          <Button variant="ghost" asChild>
+            <Link href="/admin/dashboard">Admin</Link>
+          </Button>
+        )}
+        <Button variant="ghost" asChild>
+          <Link href="/profile">Profile</Link>
+        </Button>
+        <Button onClick={handleLogout} variant="ghost">
+          Logout
+        </Button>
+      </div>
     );
   }
 
