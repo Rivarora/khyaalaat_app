@@ -96,6 +96,11 @@ export async function addComment(poetryId: string, comment: string, user: UserIn
   revalidatePath('/');
 }
 
+export async function updateComment(poetryId: string, commentId: string, newText: string) {
+  await updateComment(poetryId, commentId, newText);
+  revalidatePath('/');
+}
+
 export async function deleteComment(poetryId: string, commentId: string) {
   await deleteCommentFromPoetry(poetryId, commentId);
   revalidatePath('/');
