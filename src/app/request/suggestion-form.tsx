@@ -65,8 +65,17 @@ export function SuggestionForm() {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Required',
+        description: 'Please log in to submit a request.',
+      });
+      return;
+    }
+
     startTransition(async () => {
-      const result = await sendRequest(values);
+      const result = await sendRequest(values, user.uid);
       if (result.success) {
         setIsSubmitted(true);
       } else {
