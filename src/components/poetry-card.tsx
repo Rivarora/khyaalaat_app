@@ -54,8 +54,20 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
   }, [poetry.likes, user]);
   
   useEffect(() => {
-    setComments(poetry.comments || []);
-  }, [poetry.comments]);
+    // Load comments from subcollection
+    const loadComments = async () => {
+      try {
+        const commentsData = await getCommentsForPoetry(poetry.id);
+        setComments(commentsData);
+      } catch (error) {
+        console.error('Error loading comments:', error);
+        // Fallback to legacy comments if subcollection fails
+        setComments(poetry.comments || []);
+      }
+    };
+    
+    loadComments();
+  }, [poetry.id, poetry.comments]);
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
