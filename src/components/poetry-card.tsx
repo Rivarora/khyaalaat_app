@@ -212,7 +212,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
               data-ai-hint={poetry.image.imageHint}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
-            {user && user.email === 'arorariva19@gmail.com' && (
+            {isAdmin && (
               <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button
                   variant="ghost"
