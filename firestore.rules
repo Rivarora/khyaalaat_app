@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection - users can read their own data and admins can read all
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Poetry collection - all authenticated users can read, only admins can write
+    match /poetry/{poemId} {
+      allow read: if true; // Public read access for poems
+      allow create: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow update: if request.auth != null && (
+        // Allow users to update likes array
+        (request.auth.uid != null && 
+         resource.data.keys().difference(['likes']).size() == 
+         request.resource.data.keys().difference(['likes']).size()) ||
+        // Allow admins to update anything
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+      allow delete: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+
+      // Comments subcollection
+      match /comments/{commentId} {
+        allow read: if true; // Public read access for comments
+        allow create: if request.auth != null && 
+          request.auth.uid == request.resource.data.user.id;
+        allow update: if request.auth != null && (
+          // Users can update their own comments
+          request.auth.uid == resource.data.user.id ||
+          // Admins can update any comment
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        );
+        allow delete: if request.auth != null && (
+          // Users can delete their own comments
+          request.auth.uid == resource.data.user.id ||
+          // Admins can delete any comment
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        );
+      }
+    }
+
+    // Requests collection - authenticated users can create and read their own, admins can read/update all
+    match /requests/{requestId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.userId ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+      allow update: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow delete: if request.auth != null && (
+        request.auth.uid == resource.data.userId ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+  }
+}
