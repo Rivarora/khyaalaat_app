@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { addPoetry, deletePoetryById, updatePoetryLikes } from './data';
-import { addCommentToPoetry, deleteCommentFromPoetry, updateComment } from './comments';
+import { addCommentToPoetry, deleteCommentFromPoetry, updateComment as updateCommentText } from './comments';
 import type { Poetry, UserInfo } from './definitions';
 import { storage } from './firebase';
 import { ref, deleteObject } from 'firebase/storage';
