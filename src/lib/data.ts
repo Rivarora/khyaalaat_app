@@ -88,7 +88,8 @@ export async function updatePoetryLikes(poetryId: string, user: UserInfo, isLike
   }
 }
 
-export async function addCommentToPoetry(poetryId: string, commentText: string, user: UserInfo): Promise<void> {
+// Legacy comment functions - keeping for backward compatibility
+export async function addCommentToPoetryLegacy(poetryId: string, commentText: string, user: UserInfo): Promise<void> {
   try {
     const docRef = doc(db, 'poetry', poetryId);
     const newComment = {
@@ -105,7 +106,7 @@ export async function addCommentToPoetry(poetryId: string, commentText: string, 
   }
 }
 
-export async function deleteCommentFromPoetry(poetryId: string, commentId: string): Promise<void> {
+export async function deleteCommentFromPoetryLegacy(poetryId: string, commentId: string): Promise<void> {
   try {
     const docRef = doc(db, 'poetry', poetryId);
     const docSnap = await getDoc(docRef);
