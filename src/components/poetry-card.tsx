@@ -166,7 +166,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user || user.email !== 'arorariva19@gmail.com') {
+    if (!isAdmin) {
         toast({
             variant: 'destructive',
             title: 'Unauthorized',
