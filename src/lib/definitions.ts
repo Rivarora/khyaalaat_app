@@ -41,7 +41,8 @@ export type Poetry = {
   poem: string; // Full poem text
   mood?: string;
   tags?: string;
-  comments: Comment[];
+  comments: Comment[]; // Keep for backward compatibility during migration
+  commentsCount: number;
   createdAt: Date | Timestamp;
 };
 
