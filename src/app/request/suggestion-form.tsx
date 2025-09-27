@@ -52,6 +52,7 @@ export function SuggestionForm() {
   const [isPending, startTransition] = useTransition();
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
+  const { user, userDoc, loading } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
