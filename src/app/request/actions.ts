@@ -29,7 +29,8 @@ type ActionResult = {
 };
 
 export async function sendRequest(
-  values: PoemRequestForm
+  values: PoemRequestForm,
+  userId: string
 ): Promise<ActionResult> {
   const validatedValues = formSchema.safeParse(values);
 
@@ -38,7 +39,10 @@ export async function sendRequest(
   }
 
   try {
-    await addRequest(validatedValues.data);
+    await addRequest({
+      ...validatedValues.data,
+      userId,
+    });
     revalidatePath('/requests');
     return { success: true };
   } catch (error) {
