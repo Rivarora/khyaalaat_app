@@ -97,7 +97,7 @@ export async function addComment(poetryId: string, comment: string, user: UserIn
 }
 
 export async function updateComment(poetryId: string, commentId: string, newText: string) {
-  await updateComment(poetryId, commentId, newText);
+  await updateCommentText(poetryId, commentId, newText);
   revalidatePath('/');
 }
 
