@@ -35,7 +35,7 @@ const cardVariants = {
 };
 
 export function PoetryCard({ poetry, index }: PoetryCardProps) {
-  const { user } = useAuth();
+  const { user, userDoc, isAdmin } = useAuth();
   const [likes, setLikes] = useState<UserInfo[]>(poetry.likes || []);
   const [isLiked, setIsLiked] = useState(false);
   const [showComments, setShowComments] = useState(false);
