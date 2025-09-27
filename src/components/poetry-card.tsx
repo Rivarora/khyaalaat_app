@@ -10,6 +10,7 @@ import type { Poetry, Comment, UserInfo } from '@/lib/definitions';
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
 import { deletePoetry, likePoetry, addComment, deleteComment } from '@/lib/actions';
+import { getCommentsForPoetry } from '@/lib/comments';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from './ui/input';
 import {
