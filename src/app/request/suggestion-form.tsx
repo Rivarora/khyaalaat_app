@@ -30,6 +30,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { sendRequest } from './actions';
+import { useAuth } from '@/components/providers/auth-provider';
 
 const formSchema = z.object({
   name: z.string().min(2, {
