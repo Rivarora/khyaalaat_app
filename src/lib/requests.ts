@@ -47,6 +47,7 @@ export async function addRequest(request: Omit<PoemRequest, 'id' | 'createdAt' |
         });
     } catch (error) {
         console.error('Error adding request to Firestore:', error);
+        throw error;
     }
 }
 
