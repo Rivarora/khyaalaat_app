@@ -47,12 +47,13 @@ export type Poetry = {
 };
 
 export type PoemRequest = {
-  id:string;
+  id: string;
   name: string;
   topic: string;
   genre: 'Love' | 'Sad' | 'Motivational' | 'Nature';
   mood: string;
   description: string;
+  userId?: string; // Optional for backward compatibility
   createdAt: string;
   completed: boolean;
 };
