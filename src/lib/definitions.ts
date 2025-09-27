@@ -15,6 +15,15 @@ export type UserInfo = {
   photo: string | null;
 }
 
+export type User = {
+  uid: string;
+  name: string;
+  email: string;
+  photoURL?: string;
+  role: 'admin' | 'user';
+  createdAt: Date | Timestamp;
+}
+
 export type Comment = {
   id: string;
   text: string;
