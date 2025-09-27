@@ -88,6 +88,37 @@ export function SuggestionForm() {
     });
   }
 
+  if (loading) {
+    return (
+      <Card className="bg-card/50 border-border shadow-lg">
+        <CardContent className="pt-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Card className="bg-card/50 border-border shadow-lg">
+        <CardHeader>
+          <CardTitle className="font-headline text-2xl">Login Required</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground mb-4">
+            Please log in to submit a poem request.
+          </p>
+          <Button asChild>
+            <a href="/login">Login</a>
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (isSubmitted) {
     return (
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
