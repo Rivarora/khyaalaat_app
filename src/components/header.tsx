@@ -57,7 +57,7 @@ export function Header() {
           <Button variant="ghost" asChild>
             <Link href="/request">Request a Poem</Link>
           </Button>
-           <Button variant="ghost" asChild>
+          <Button variant="ghost" asChild>
             <Link href="/requests">View Requests</Link>
           </Button>
         </nav>
