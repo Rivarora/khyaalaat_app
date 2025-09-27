@@ -31,6 +31,7 @@ function poetryFromDoc(doc: any): Poetry {
             ...c,
             createdAt: c.createdAt?.toDate(),
         })) || [],
+        commentsCount: data.commentsCount || data.comments?.length || 0,
     };
 }
 
