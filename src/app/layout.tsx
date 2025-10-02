@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { Footer } from '@/components/footer';
 import { ParticleProvider } from '@/components/providers/particle-provider';
 import { AuthProvider } from '@/components/providers/auth-provider';
+import { SupabaseAuthProvider } from '@/components/providers/supabase-auth-provider';
 import { MobileNav } from '@/components/mobile-nav';
 
 export const metadata: Metadata = {
@@ -36,12 +37,14 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <ParticleProvider>
-              <div className="flex-grow pb-20 md:pb-0">{children}</div>
-              <Toaster />
-              <MobileNav />
-              <Footer />
-            </ParticleProvider>
+            <SupabaseAuthProvider>
+              <ParticleProvider>
+                <div className="flex-grow pb-20 md:pb-0">{children}</div>
+                <Toaster />
+                <MobileNav />
+                <Footer />
+              </ParticleProvider>
+            </SupabaseAuthProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
