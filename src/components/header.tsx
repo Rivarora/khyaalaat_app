@@ -3,8 +3,7 @@ import Link from 'next/link';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/providers/auth-provider';
-import { auth } from '@/lib/firebase';
-import { signOut } from 'firebase/auth';
+import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 
 function AuthButton() {
@@ -12,7 +11,7 @@ function AuthButton() {
   const router = useRouter();
 
   const handleLogout = async () => {
-    await signOut(auth);
+    await supabase.auth.signOut();
     router.push('/');
   };
 

@@ -63,7 +63,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
       return;
     }
     
-    const currentUserInfo: UserInfo = { id: user.uid, name: user.displayName, photo: user.photoURL };
+    const currentUserInfo: UserInfo = { id: user.uid, name: user.displayName ?? null, photo: user.photoURL ?? null };
     const newIsLiked = !isLiked;
 
     startTransition(async () => {
@@ -126,7 +126,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
     }
     if (newComment.trim()) {
       startCommentActionTransition(async () => {
-        const currentUserInfo: UserInfo = { id: user.uid, name: user.displayName, photo: user.photoURL };
+        const currentUserInfo: UserInfo = { id: user.uid, name: user.displayName ?? null, photo: user.photoURL ?? null };
         const tempId = `temp-${Date.now()}`;
         const optimisticComment: Comment = { id: tempId, text: newComment.trim(), user: currentUserInfo };
         
@@ -277,7 +277,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                     size="icon"
                     onClick={(e) => {
                         e.stopPropagation();
-                        document.querySelector(`[data-trigger-id="${poetry.id}"]`)?.click();
+                        (document.querySelector(`[data-trigger-id="${poetry.id}"]`) as HTMLElement | null)?.click();
                         setTimeout(() => setShowComments(true), 150);
                     }}
                     className="hover:bg-white/20 text-white"
