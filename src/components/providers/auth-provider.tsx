@@ -3,6 +3,13 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
+
+// Check if we have valid Supabase configuration
+const hasSupabaseConfig = 
+  process.env.NEXT_PUBLIC_SUPABASE_URL && 
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('demo') &&
+  !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.includes('demo');
 import type { Database } from '@/lib/supabase/database.types';
 
 type UserProfile = Database['public']['Tables']['users']['Row'];
@@ -31,16 +38,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!hasSupabaseConfig) {
+      // Demo mode - no real authentication
+      setUser(null);
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+
     // Get initial session
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        await fetchProfile(session.user.id);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Auth error:', error);
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
 
     getSession();
@@ -64,6 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const fetchProfile = async (userId: string) => {
+    if (!hasSupabaseConfig) return;
+    
     try {
       const { data, error } = await supabase
         .from('users')
@@ -83,6 +105,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    if (!hasSupabaseConfig) {
+      console.log('Demo mode: Sign out');
+      return;
+    }
+    
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Error signing out:', error);
@@ -90,6 +117,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithEmail = async (email: string, password: string) => {
+    if (!hasSupabaseConfig) {
+      console.log('Demo mode: Sign in with', email);
+      return { error: 'Demo mode - Supabase not configured. Please set up your Supabase credentials to enable authentication.' };
+    }
+    
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -103,6 +135,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUpWithEmail = async (email: string, password: string, name?: string) => {
+    if (!hasSupabaseConfig) {
+      console.log('Demo mode: Sign up with', email, name);
+      return { error: 'Demo mode - Supabase not configured. Please set up your Supabase credentials to enable authentication.' };
+    }
+    
     const { error } = await supabase.auth.signUp({
       email,
       password,

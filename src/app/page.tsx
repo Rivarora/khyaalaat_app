@@ -2,6 +2,7 @@
 import { Header } from '@/components/header';
 import { PoetryCard } from '@/components/poetry-card';
 import { SplashScreen } from '@/components/splash-screen';
+import { DemoBanner } from '@/components/demo-banner';
 import { getPoetryData } from '@/lib/data';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useMemo } from 'react';
@@ -79,6 +80,7 @@ export default function Home() {
         transition={{ duration: 0.5, delay: 0.2 }}
         className="container mx-auto px-4 py-8 pt-24"
       >
+        <DemoBanner />
         <div className="text-center mb-12">
           <h1 className="text-5xl md:text-7xl font-headline font-black text-primary">Khyaalaat</h1>
           <p className="mt-4 text-lg text-muted-foreground">Thoughts rendered in verse and color.</p>
