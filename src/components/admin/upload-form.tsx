@@ -69,7 +69,7 @@ export function UploadForm() {
           <div className="space-y-2">
             <Label htmlFor="image">Poetry Image</Label>
             <Input id="image" name="image" type="file" accept="image/*" required />
-            {state?.errors?.image && <p className="text-sm text-destructive">{state.errors.image}</p>}
+            {(state?.errors as any)?.image && <p className="text-sm text-destructive">{(state.errors as any).image}</p>}
           </div>
 
           <div className="space-y-2">
