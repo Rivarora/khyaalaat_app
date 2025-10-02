@@ -2,7 +2,7 @@
 'use server';
 
 import { z } from 'zod';
-import { addRequest, updateRequestStatus, deleteRequestById } from '@/lib/requests';
+import { addRequest, updateRequestStatus, deleteRequestById } from '@/lib/requests-server';
 import { revalidatePath } from 'next/cache';
 
 const formSchema = z.object({
