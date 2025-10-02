@@ -1,7 +1,7 @@
 'use client';
 
 import { Header } from '@/components/header';
-import { getRequests } from '@/lib/requests';
+import { getRequests } from '@/lib/requests-client';
 import {
   Table,
   TableBody,
