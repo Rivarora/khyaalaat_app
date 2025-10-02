@@ -48,7 +48,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
   useEffect(() => {
     setLikes(poetry.likes || []);
     if (user) {
-      setIsLiked(poetry.likes?.some(u => u.id === user.uid) || false);
+      setIsLiked(poetry.likes?.some(u => u.id === user.id) || false);
     }
   }, [poetry.likes, user]);
   
@@ -63,7 +63,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
       return;
     }
     
-    const currentUserInfo: UserInfo = { id: user.uid, name: user.displayName, photo: user.photoURL };
+    const currentUserInfo: UserInfo = { id: user.id, name: user.user_metadata?.name || null, photo: user.user_metadata?.avatar_url || null };
     const newIsLiked = !isLiked;
 
     startTransition(async () => {
@@ -72,7 +72,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
       setLikes(prevLikes => 
         newIsLiked 
         ? [...prevLikes, currentUserInfo] 
-        : prevLikes.filter(u => u.id !== user.uid)
+        : prevLikes.filter(u => u.id !== user.id)
       );
 
       try {
@@ -82,7 +82,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
         setIsLiked(!newIsLiked);
         setLikes(prevLikes => 
           newIsLiked 
-          ? prevLikes.filter(u => u.id !== user.uid)
+          ? prevLikes.filter(u => u.id !== user.id)
           : [...prevLikes, currentUserInfo]
         );
         toast({
@@ -126,7 +126,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
     }
     if (newComment.trim()) {
       startCommentActionTransition(async () => {
-        const currentUserInfo: UserInfo = { id: user.uid, name: user.displayName, photo: user.photoURL };
+        const currentUserInfo: UserInfo = { id: user.id, name: user.user_metadata?.name || null, photo: user.user_metadata?.avatar_url || null };
         const tempId = `temp-${Date.now()}`;
         const optimisticComment: Comment = { id: tempId, text: newComment.trim(), user: currentUserInfo };
         
@@ -277,7 +277,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                     size="icon"
                     onClick={(e) => {
                         e.stopPropagation();
-                        document.querySelector(`[data-trigger-id="${poetry.id}"]`)?.click();
+                        (document.querySelector(`[data-trigger-id="${poetry.id}"]`) as HTMLElement)?.click();
                         setTimeout(() => setShowComments(true), 150);
                     }}
                     className="hover:bg-white/20 text-white"
@@ -417,7 +417,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                                     <p className="text-muted-foreground">{comment.text}</p>
                                 </div>
                             </div>
-                            {user && (user.uid === comment.user.id || user.email === 'arorariva19@gmail.com') && <Button 
+                            {user && (user.id === comment.user.id || user.email === 'arorariva19@gmail.com') && <Button 
                               variant="ghost" 
                               size="icon" 
                               className="h-6 w-6 opacity-0 group-hover/comment:opacity-100"

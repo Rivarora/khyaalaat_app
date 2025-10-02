@@ -1,116 +1,188 @@
-
 'use client';
 
 import { useState } from 'react';
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  updateProfile,
-  User,
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useRouter } from 'next/navigation';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { useAuth } from '@/components/providers/auth-provider';
 
-interface EmailAuthFormProps {
-  isSignUp: boolean;
-  onSuccess: (user: User) => void;
-  onError: (error: string) => void;
-  setPending: (isPending: boolean) => void;
-}
-
-export function EmailAuthForm({
-  isSignUp,
-  onSuccess,
-  onError,
-  setPending,
-}: EmailAuthFormProps) {
+export function EmailAuthForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [name, setName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const router = useRouter();
+  
+  const { signInWithEmail, signUpWithEmail } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setPending(true);
-    onError('');
+    setIsLoading(true);
+    setError('');
 
     try {
-      let userCredential;
-      if (isSignUp) {
-        userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(userCredential.user, { displayName });
+      const result = await signInWithEmail(email, password);
+      if (result.error) {
+        setError(result.error);
       } else {
-        userCredential = await signInWithEmailAndPassword(auth, email, password);
+        router.push('/');
       }
-      onSuccess(userCredential.user);
     } catch (error: any) {
-      if (error.code === 'auth/email-already-in-use' && !isSignUp) {
-        try {
-          const userCredential = await signInWithEmailAndPassword(auth, email, password);
-          onSuccess(userCredential.user);
-        } catch (signInError: any) {
-          onError(signInError.message);
-        }
-      } else {
-        onError(error.message);
-      }
+      setError('An unexpected error occurred. Please try again.');
     } finally {
-      setLoading(false);
-      setPending(false);
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const result = await signUpWithEmail(email, password, name);
+      if (result.error) {
+        setError(result.error);
+      } else {
+        router.push('/');
+      }
+    } catch (error: any) {
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="space-y-4">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {isSignUp && (
-          <div>
-            <Label htmlFor="displayName">Display Name</Label>
-            <Input
-              id="displayName"
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Jane Doe"
-              required
-              disabled={loading}
-            />
-          </div>
-        )}
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="name@example.com"
-            required
-            disabled={loading}
-          />
-        </div>
-        <div>
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            required
-            minLength={6}
-            disabled={loading}
-          />
-        </div>
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isSignUp ? 'Sign Up' : 'Sign In'}
-        </Button>
-      </form>
-    </div>
+    <Card className="w-full max-w-md mx-auto">
+      <Tabs defaultValue="signin" className="w-full">
+        <CardHeader>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="signin">Sign In</TabsTrigger>
+            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+          </TabsList>
+        </CardHeader>
+        
+        <TabsContent value="signin">
+          <form onSubmit={handleSignIn}>
+            <CardContent className="space-y-4">
+              <CardTitle>Sign in to your account</CardTitle>
+              <CardDescription>
+                Enter your email and password to access your account.
+              </CardDescription>
+              
+              {error && (
+                <div className="flex items-center gap-2 text-red-600 text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  {error}
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="signin-email">Email</Label>
+                <Input
+                  id="signin-email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="signin-password">Password</Label>
+                <Input
+                  id="signin-password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+            </CardContent>
+            
+            <CardFooter>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading ? 'Signing In...' : 'Sign In'}
+              </Button>
+            </CardFooter>
+          </form>
+        </TabsContent>
+        
+        <TabsContent value="signup">
+          <form onSubmit={handleSignUp}>
+            <CardContent className="space-y-4">
+              <CardTitle>Create an account</CardTitle>
+              <CardDescription>
+                Enter your information to create a new account.
+              </CardDescription>
+              
+              {error && (
+                <div className="flex items-center gap-2 text-red-600 text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  {error}
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="signup-name">Name (optional)</Label>
+                <Input
+                  id="signup-name"
+                  type="text"
+                  placeholder="Enter your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="signup-email">Email</Label>
+                <Input
+                  id="signup-email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="signup-password">Password</Label>
+                <Input
+                  id="signup-password"
+                  type="password"
+                  placeholder="Create a password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  disabled={isLoading}
+                />
+              </div>
+            </CardContent>
+            
+            <CardFooter>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading ? 'Creating Account...' : 'Create Account'}
+              </Button>
+            </CardFooter>
+          </form>
+        </TabsContent>
+      </Tabs>
+    </Card>
   );
 }

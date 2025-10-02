@@ -25,7 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   signUpWithEmail: async () => ({}),
 });
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('id', userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error fetching profile:', error);
         return;
       }
@@ -136,10 +136,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export const useAuth = () => {
+export const useSupabaseAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useSupabaseAuth must be used within a SupabaseAuthProvider');
   }
   return context;
 };

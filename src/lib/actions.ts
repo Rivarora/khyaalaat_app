@@ -3,9 +3,9 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { writeFile, mkdir, unlink } from 'fs/promises';
-import { join } from 'path';
 import { addPoetry, deletePoetryById, updatePoetryLikes, addCommentToPoetry, deleteCommentFromPoetry } from './data';
+import { uploadImage, deleteImage } from './supabase/storage';
+import { createClient } from './supabase/server';
 import type { Poetry, UserInfo } from './definitions';
 
 const uploadSchema = z.object({
@@ -18,6 +18,14 @@ const uploadSchema = z.object({
 });
 
 export async function uploadPoetry(prevState: any, formData: FormData) {
+  const supabase = await createClient();
+  
+  // Check if user is authenticated
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { message: 'Error: You must be logged in to upload poetry.' };
+  }
+
   const validatedFields = uploadSchema.safeParse({
     title: formData.get('title'),
     caption: formData.get('caption'),
@@ -41,57 +49,55 @@ export async function uploadPoetry(prevState: any, formData: FormData) {
     return { message: 'Error: Image is required.' };
   }
 
-  const buffer = Buffer.from(await image.arrayBuffer());
-  const filename = `${Date.now()}-${image.name}`;
-  const uploadDir = join(process.cwd(), 'public', 'uploads');
-  const imagePath = `/uploads/${filename}`;
-  const fullPath = join(uploadDir, filename);
-
-  try {
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(fullPath, buffer);
-  } catch (error) {
-    console.error('Failed to write file:', error);
-    return { message: 'Error: Could not save image.' };
+  // Upload image to Supabase Storage
+  const { url: imageUrl, error: uploadError } = await uploadImage(image, user.id);
+  if (uploadError) {
+    return { message: `Error: Could not save image. ${uploadError}` };
   }
 
-  const newPoetry: Poetry = {
-    id: Date.now().toString(),
+  const newPoetry: Omit<Poetry, 'likes' | 'comments'> = {
+    id: crypto.randomUUID(),
     title,
     genre,
     caption,
     poem,
     image: {
-      id: Date.now().toString(),
-      imageUrl: imagePath,
+      id: crypto.randomUUID(),
+      imageUrl,
       imageHint: 'poetry image',
       description: title,
     },
-    likes: [],
-    comments: [],
   };
 
-  await addPoetry(newPoetry);
-
-  revalidatePath('/');
-
-  return { message: `Poetry "${title}" uploaded successfully!` };
+  try {
+    await addPoetry(newPoetry);
+    revalidatePath('/');
+    return { message: `Poetry "${title}" uploaded successfully!` };
+  } catch (error) {
+    // If poetry creation fails, clean up the uploaded image
+    await deleteImage(imageUrl);
+    return { message: 'Error: Could not save poetry. Please try again.' };
+  }
 }
 
 export async function deletePoetry(poetryId: string) {
+  const supabase = await createClient();
+  
+  // Check if user is authenticated
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return;
+  }
+
   const deletedPoetry = await deletePoetryById(poetryId);
 
   if (deletedPoetry) {
-    // Delete the image file from the server
-    try {
-      if (deletedPoetry.image.imageUrl.startsWith('/uploads/')) {
-        const imagePath = join(process.cwd(), 'public', deletedPoetry.image.imageUrl);
-        await unlink(imagePath);
+    // Delete the image from Supabase Storage
+    if (deletedPoetry.image.imageUrl) {
+      const { error } = await deleteImage(deletedPoetry.image.imageUrl);
+      if (error) {
+        console.error(`Failed to delete image file: ${deletedPoetry.image.imageUrl}`, error);
       }
-    } catch (error) {
-      // Log the error but don't block the response.
-      // The image might not exist, or there could be a permissions issue.
-      console.error(`Failed to delete image file: ${deletedPoetry.image.imageUrl}`, error);
     }
   }
 
@@ -99,16 +105,40 @@ export async function deletePoetry(poetryId: string) {
 }
 
 export async function likePoetry(poetryId: string, user: UserInfo, isLiked: boolean) {
+  const supabase = await createClient();
+  
+  // Check if user is authenticated
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+  if (!authUser) {
+    return;
+  }
+
   await updatePoetryLikes(poetryId, user, isLiked);
   revalidatePath('/');
 }
 
 export async function addComment(poetryId: string, comment: string, user: UserInfo) {
+  const supabase = await createClient();
+  
+  // Check if user is authenticated
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+  if (!authUser) {
+    return;
+  }
+
   await addCommentToPoetry(poetryId, comment, user);
   revalidatePath('/');
 }
 
 export async function deleteComment(poetryId: string, commentId: string) {
+  const supabase = await createClient();
+  
+  // Check if user is authenticated
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return;
+  }
+
   await deleteCommentFromPoetry(poetryId, commentId);
   revalidatePath('/');
 }
