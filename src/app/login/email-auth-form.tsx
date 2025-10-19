@@ -2,13 +2,9 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  updateProfile,
-  User,
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { supabase } from '@/lib/supabaseClient';
+
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,7 +12,7 @@ import { Loader2 } from 'lucide-react';
 
 interface EmailAuthFormProps {
   isSignUp: boolean;
-  onSuccess: (user: User) => void;
+  onSuccess: (user: any) => void;
   onError: (error: string) => void;
   setPending: (isPending: boolean) => void;
 }
@@ -39,25 +35,25 @@ export function EmailAuthForm({
     onError('');
 
     try {
-      let userCredential;
+      let authResponse;
       if (isSignUp) {
-        userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(userCredential.user, { displayName });
+        authResponse = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { name: displayName } },
+        });
       } else {
-        userCredential = await signInWithEmailAndPassword(auth, email, password);
+        authResponse = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
       }
-      onSuccess(userCredential.user);
+      if (authResponse.error) {
+        throw authResponse.error;
+      }
+      onSuccess(authResponse.data.user);
     } catch (error: any) {
-      if (error.code === 'auth/email-already-in-use' && !isSignUp) {
-        try {
-          const userCredential = await signInWithEmailAndPassword(auth, email, password);
-          onSuccess(userCredential.user);
-        } catch (signInError: any) {
-          onError(signInError.message);
-        }
-      } else {
-        onError(error.message);
-      }
+      onError(error.message || 'Authentication failed');
     } finally {
       setLoading(false);
       setPending(false);

@@ -7,9 +7,12 @@ import { Heart, MessageCircle, Send, Share2, Trash2 } from 'lucide-react';
 import { useState, useTransition, useEffect } from 'react';
 
 import type { Poetry, Comment, UserInfo } from '@/lib/definitions';
+import { getLikesForPoetry, likePoetrySupabase, unlikePoetrySupabase } from '@/lib/supabaseLikes';
+import { getCommentsSupabase } from '@/lib/supabasePoems';
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
 import { deletePoetry, likePoetry, addComment, deleteComment } from '@/lib/actions';
+import { deletePoemSupabase } from '@/lib/supabasePoems';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from './ui/input';
 import {
@@ -36,7 +39,17 @@ const cardVariants = {
 
 export function PoetryCard({ poetry, index }: PoetryCardProps) {
   const { user } = useAuth();
-  const [likes, setLikes] = useState<UserInfo[]>(poetry.likes || []);
+  // Get userId from Supabase Auth only
+  function getUserId() {
+    if (user && user.id) return user.id;
+    return null;
+  }
+  function getUserName() {
+    return user?.user_metadata?.name || user?.email || 'Anonymous';
+  }
+  const userId = getUserId();
+  const userName = getUserName();
+  const [likes, setLikes] = useState<any[]>([]);
   const [isLiked, setIsLiked] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
@@ -46,15 +59,28 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
   const { toast } = useToast();
 
   useEffect(() => {
-    setLikes(poetry.likes || []);
-    if (user) {
-      setIsLiked(poetry.likes?.some(u => u.id === user.uid) || false);
+    async function fetchLikes() {
+      const likesData = await getLikesForPoetry(poetry.id);
+      setLikes(likesData);
+      setIsLiked(likesData.some((liker: any) => liker.user_id === userId));
     }
-  }, [poetry.likes, user]);
+    fetchLikes();
+  }, [poetry.id, userId]);
   
   useEffect(() => {
-    setComments(poetry.comments || []);
-  }, [poetry.comments]);
+    let mounted = true;
+    (async () => {
+      try {
+        const list = await getCommentsSupabase(poetry.id);
+        if (mounted) setComments(list);
+      } catch (e) {
+        // swallow
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [poetry.id]);
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -62,33 +88,23 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
       toast({ variant: 'destructive', title: 'Login Required', description: 'You must be logged in to like a poem.' });
       return;
     }
-    
-    const currentUserInfo: UserInfo = { id: user.uid, name: user.displayName, photo: user.photoURL };
-    const newIsLiked = !isLiked;
-
     startTransition(async () => {
-      // Optimistic update
-      setIsLiked(newIsLiked);
-      setLikes(prevLikes => 
-        newIsLiked 
-        ? [...prevLikes, currentUserInfo] 
-        : prevLikes.filter(u => u.id !== user.uid)
-      );
-
+      const previousLiked = isLiked;
+      setIsLiked(!previousLiked);
       try {
-        await likePoetry(poetry.id, currentUserInfo, newIsLiked);
-      } catch (error) {
-        // Revert UI changes on error
-        setIsLiked(!newIsLiked);
-        setLikes(prevLikes => 
-          newIsLiked 
-          ? prevLikes.filter(u => u.id !== user.uid)
-          : [...prevLikes, currentUserInfo]
-        );
+        if (previousLiked) {
+          await unlikePoetrySupabase(poetry.id, String(userId));
+        } else {
+          await likePoetrySupabase(poetry.id, { id: String(userId), name: userName, photo: user?.user_metadata?.avatar_url || '' });
+        }
+        const likesData = await getLikesForPoetry(poetry.id);
+        setLikes(likesData);
+      } catch (error: any) {
+        setIsLiked(previousLiked);
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Failed to update like status.',
+          description: error?.message || JSON.stringify(error) || 'Failed to update like status.',
         });
       }
     });
@@ -121,27 +137,25 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
 
   const handleAddComment = () => {
     if (!user) {
-        toast({ variant: 'destructive', title: 'Login Required', description: 'You must be logged in to comment.' });
-        return;
+      toast({ variant: 'destructive', title: 'Login Required', description: 'You must be logged in to comment.' });
+      return;
     }
     if (newComment.trim()) {
       startCommentActionTransition(async () => {
-        const currentUserInfo: UserInfo = { id: user.uid, name: user.displayName, photo: user.photoURL };
+        const currentUserInfo: UserInfo = { id: user.id, name: user.user_metadata?.name || user.email, photo: user.user_metadata?.avatar_url || '' };
         const tempId = `temp-${Date.now()}`;
         const optimisticComment: Comment = { id: tempId, text: newComment.trim(), user: currentUserInfo };
-        
         setComments(prev => [...prev, optimisticComment]);
         setNewComment('');
-
         try {
           await addComment(poetry.id, newComment.trim(), currentUserInfo);
         } catch (error) {
-           setComments(prev => prev.filter(c => c.id !== tempId));
-           toast({
+          setComments(prev => prev.filter(c => c.id !== tempId));
+          toast({
             variant: 'destructive',
             title: 'Error',
             description: 'Failed to add comment.',
-           });
+          });
         }
       });
     }
@@ -176,11 +190,16 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
     
     startTransition(async () => {
         try {
+          // Delete in Supabase with the user's session (passes RLS authenticated)
+          await deletePoemSupabase(poetry.id);
+          // Also call server action to clean local JSON/image if present
           await deletePoetry(poetry.id);
           toast({
             title: 'Poem Deleted',
             description: `"${poetry.title}" has been successfully deleted.`,
           });
+          // Ensure UI reflects deletion
+          try { window.location.reload(); } catch {}
         } catch (error) {
           toast({
             variant: 'destructive',
@@ -240,7 +259,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={handleLike}
+                            onClick={user ? handleLike : (e) => { e.stopPropagation(); toast({ variant: 'destructive', title: 'Login Required', description: 'You must be logged in to like a poem.' }); }}
                             disabled={isPending}
                             className="hover:bg-white/20 text-white !px-2"
                           >
@@ -256,15 +275,14 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                      {likes.length > 0 && (
                         <TooltipContent side="top" className="bg-black/70 text-white border-none">
                             <div className="flex items-center gap-2">
-                                {likes.slice(0, 5).map(u => (
-                                    <Avatar key={u.id} className="h-6 w-6">
+                {likes.slice(0, 5).map((u: any, i: number) => (
+                  <Avatar key={u.id || u.userId || i} className="h-6 w-6">
                                         <AvatarImage src={u.photo || ''} alt={u.name || 'User'} />
                                         <AvatarFallback>{u.name?.charAt(0) || 'U'}</AvatarFallback>
                                     </Avatar>
                                 ))}
                                 <p className="text-xs">
-                                    {likes[0].name}
-                                    {likes.length > 1 && ` and ${likes.length - 1} others`}
+                                  {likes.map((u: any) => u?.name || 'User').join(', ')}
                                 </p>
                             </div>
                         </TooltipContent>
@@ -277,7 +295,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                     size="icon"
                     onClick={(e) => {
                         e.stopPropagation();
-                        document.querySelector(`[data-trigger-id="${poetry.id}"]`)?.click();
+                        (document.querySelector(`[data-trigger-id="${poetry.id}"]`) as HTMLElement | null)?.click();
                         setTimeout(() => setShowComments(true), 150);
                     }}
                     className="hover:bg-white/20 text-white"
@@ -345,34 +363,33 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                   <TooltipProvider delayDuration={100}>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => { e.stopPropagation(); handleLike(e); }}
-                          disabled={isPending}
-                          className="hover:bg-accent/50"
-                        >
-                          <Heart
-                            className={cn(
-                              'mr-2 h-5 w-5 transition-all',
-                              isLiked ? 'fill-red-500 text-red-500' : 'fill-muted-foreground'
-                            )}
-                          />
-                          {likes.length}
-                        </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); handleLike(e); }}
+                            disabled={isPending || !user}
+                            className="hover:bg-accent/50"
+                          >
+                            <Heart
+                              className={cn(
+                                'mr-2 h-5 w-5 transition-all',
+                                isLiked ? 'fill-red-500 text-red-500' : 'fill-muted-foreground'
+                              )}
+                            />
+                            {likes.length}
+                          </Button>
                       </TooltipTrigger>
                       {likes.length > 0 && (
                           <TooltipContent side="top">
                               <div className="flex items-center gap-2">
-                                  {likes.slice(0, 5).map(u => (
-                                      <Avatar key={u.id} className="h-6 w-6">
+                  {likes.slice(0, 5).map((u: any, i: number) => (
+                    <Avatar key={u.id || u.userId || i} className="h-6 w-6">
                                           <AvatarImage src={u.photo || ''} alt={u.name || 'User'} />
                                           <AvatarFallback>{u.name?.charAt(0) || 'U'}</AvatarFallback>
                                       </Avatar>
                                   ))}
                                   <p className="text-xs">
-                                      {likes[0].name}
-                                      {likes.length > 1 && ` and ${likes.length - 1} others`}
+                                    {likes.map((u: any) => u?.name || 'User').join(', ')}
                                   </p>
                               </div>
                           </TooltipContent>
@@ -394,12 +411,31 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                         placeholder={user ? "Add a comment..." : "Login to comment..."}
                         value={newComment}
                         onChange={(e) => { e.stopPropagation(); setNewComment(e.target.value); }}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); handleAddComment(); } }}
-                        disabled={isCommentActionPending || !user}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.stopPropagation();
+                            if (!user) {
+                              toast({ variant: 'destructive', title: 'Login Required', description: 'You must be logged in to comment.' });
+                            } else {
+                              handleAddComment();
+                            }
+                          }
+                        }}
+                        disabled={isCommentActionPending}
                         className="flex-1"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!user) toast({ variant: 'destructive', title: 'Login Required', description: 'You must be logged in to comment.' });
+                        }}
                       />
-                      <Button onClick={(e) => { e.stopPropagation(); handleAddComment(); }} size="icon" disabled={isCommentActionPending || !user}>
+                      <Button onClick={(e) => {
+                        e.stopPropagation();
+                        if (!user) {
+                          toast({ variant: 'destructive', title: 'Login Required', description: 'You must be logged in to comment.' });
+                        } else {
+                          handleAddComment();
+                        }
+                      }} size="icon" disabled={isCommentActionPending}>
                         <Send className="h-4 w-4" />
                       </Button>
                     </div>
@@ -417,7 +453,7 @@ export function PoetryCard({ poetry, index }: PoetryCardProps) {
                                     <p className="text-muted-foreground">{comment.text}</p>
                                 </div>
                             </div>
-                            {user && (user.uid === comment.user.id || user.email === 'arorariva19@gmail.com') && <Button 
+                            {user && (user.id === comment.user.id || user.email === 'arorariva19@gmail.com') && <Button 
                               variant="ghost" 
                               size="icon" 
                               className="h-6 w-6 opacity-0 group-hover/comment:opacity-100"

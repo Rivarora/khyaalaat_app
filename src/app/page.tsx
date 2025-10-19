@@ -2,7 +2,7 @@
 import { Header } from '@/components/header';
 import { PoetryCard } from '@/components/poetry-card';
 import { SplashScreen } from '@/components/splash-screen';
-import { getPoetryData } from '@/lib/data';
+import { getPoetryDataClient } from '@/lib/supabasePoems';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useMemo } from 'react';
 import type { Poetry } from '@/lib/definitions';
@@ -53,14 +53,22 @@ export default function Home() {
   const [selectedGenre, setSelectedGenre] = useState('All');
 
   useEffect(() => {
+    let mounted = true;
     async function loadData() {
-      const data = await getPoetryData();
-      setPoetryData(data);
+      try {
+        const data = await getPoetryDataClient();
+        if (mounted) setPoetryData(data);
+      } catch (e) {
+        console.error(e);
+      }
     }
     loadData();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  const genres = ['All', 'Love', 'Sad', 'Motivational', 'Nature', 'Other'];
+  const genres = ['All', 'Love', 'Sad', 'Motivational', 'Nature', 'Friendship', 'Parents', 'Other'];
 
   const filteredPoetry = useMemo(() => {
     if (selectedGenre === 'All') {

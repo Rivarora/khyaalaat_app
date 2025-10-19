@@ -18,7 +18,7 @@ export type Poetry = {
   title: string;
   image: ImagePlaceholder;
   likes: UserInfo[];
-  genre: 'Love' | 'Sad' | 'Motivational' | 'Nature' | 'Other';
+  genre: 'Love' | 'Sad' | 'Motivational' | 'Nature' | 'Friendship' | 'Parents' | 'Other';
   caption?: string; // Optional short preview
   poem: string; // Full poem text
   comments: Comment[];

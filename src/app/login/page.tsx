@@ -2,8 +2,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { getRedirectResult, User } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+
 import { useAuth } from '@/components/providers/auth-provider';
 import { Header } from '@/components/header';
 import { motion } from 'framer-motion';
@@ -30,22 +29,10 @@ export default function LoginPage() {
   }, [user, loading, router]);
 
   useEffect(() => {
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-          // User is available in the useAuth hook if redirect was successful
-        }
-      })
-      .catch((error) => {
-        console.error('Error getting redirect result:', error);
-        setAuthError(error.message);
-      })
-      .finally(() => {
-        setIsSigningIn(false);
-      });
+    setIsSigningIn(false);
   }, []);
 
-  const onAuthSuccess = (user: User) => {
+  const onAuthSuccess = (user: any) => {
     if (user.email === 'arorariva19@gmail.com') {
       router.push('/admin/upload');
     } else {

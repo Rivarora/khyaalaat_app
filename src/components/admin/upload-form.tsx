@@ -63,25 +63,16 @@ export function UploadForm() {
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
             <Input id="title" name="title" placeholder="The Whispering Wind" required />
-            {state?.errors?.title && <p className="text-sm text-destructive">{state.errors.title}</p>}
+            {(state?.errors as any)?.title && <p className="text-sm text-destructive">{(state.errors as any).title}</p>}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="image">Poetry Image</Label>
             <Input id="image" name="image" type="file" accept="image/*" required />
-            {state?.errors?.image && <p className="text-sm text-destructive">{state.errors.image}</p>}
+            {(state?.errors as any)?.image && <p className="text-sm text-destructive">{(state.errors as any).image}</p>}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="caption">Short Caption (Optional Preview)</Label>
-            <Textarea id="caption" name="caption" placeholder="A short caption or excerpt for the card..." />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="poem">Full Poem</Label>
-            <Textarea id="poem" name="poem" placeholder="Enter the full poem text here." required className="min-h-[150px]" />
-            {state?.errors?.poem && <p className="text-sm text-destructive">{state.errors.poem}</p>}
-          </div>
+          
           
           <div className="space-y-2">
             <Label htmlFor="genre">Genre</Label>
@@ -94,10 +85,12 @@ export function UploadForm() {
                 <SelectItem value="Sad">Sad</SelectItem>
                 <SelectItem value="Motivational">Motivational</SelectItem>
                 <SelectItem value="Nature">Nature</SelectItem>
+                <SelectItem value="Friendship">Friendship</SelectItem>
+                <SelectItem value="Parents">Parents</SelectItem>
                 <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
-             {state?.errors?.genre && <p className="text-sm text-destructive">{state.errors.genre}</p>}
+             {(state?.errors as any)?.genre && <p className="text-sm text-destructive">{(state.errors as any).genre}</p>}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

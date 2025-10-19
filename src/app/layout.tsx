@@ -7,6 +7,7 @@ import { Footer } from '@/components/footer';
 import { ParticleProvider } from '@/components/providers/particle-provider';
 import { AuthProvider } from '@/components/providers/auth-provider';
 import { MobileNav } from '@/components/mobile-nav';
+import UnhandledRejectionLogger from '@/components/unhandled-rejection-logger';
 
 export const metadata: Metadata = {
   title: 'Khyaalaat - A Poetry Portfolio',
@@ -41,6 +42,9 @@ export default function RootLayout({
               <Toaster />
               <MobileNav />
               <Footer />
+              {/* mount rejection logger */}
+              {/* @ts-ignore */}
+              <UnhandledRejectionLogger />
             </ParticleProvider>
           </AuthProvider>
         </ThemeProvider>

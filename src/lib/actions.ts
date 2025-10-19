@@ -5,14 +5,13 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
-import { addPoetry, deletePoetryById, updatePoetryLikes, addCommentToPoetry, deleteCommentFromPoetry } from './data';
+import { addPoetry, deletePoetryById, updatePoetryLikes } from './data';
+import { addCommentSupabase, deleteCommentSupabase, insertPoemSupabase, deletePoemSupabase } from './supabasePoems';
 import type { Poetry, UserInfo } from './definitions';
 
 const uploadSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters.'),
-  caption: z.string().optional(),
-  poem: z.string().min(10, 'Full poem must be at least 10 characters.'),
-  genre: z.enum(['Love', 'Sad', 'Motivational', 'Nature', 'Other']),
+  genre: z.enum(['Love', 'Sad', 'Motivational', 'Nature', 'Friendship', 'Parents', 'Other']),
   mood: z.string().optional(),
   tags: z.string().optional(),
 });
@@ -20,8 +19,6 @@ const uploadSchema = z.object({
 export async function uploadPoetry(prevState: any, formData: FormData) {
   const validatedFields = uploadSchema.safeParse({
     title: formData.get('title'),
-    caption: formData.get('caption'),
-    poem: formData.get('poem'),
     genre: formData.get('genre'),
     mood: formData.get('mood'),
     tags: formData.get('tags'),
@@ -34,7 +31,7 @@ export async function uploadPoetry(prevState: any, formData: FormData) {
     };
   }
 
-  const { title, genre, caption, poem } = validatedFields.data;
+  const { title, genre } = validatedFields.data;
 
   const image = formData.get('image') as File;
   if (!image || image.size === 0) {
@@ -59,8 +56,8 @@ export async function uploadPoetry(prevState: any, formData: FormData) {
     id: Date.now().toString(),
     title,
     genre,
-    caption,
-    poem,
+    caption: undefined,
+    poem: '',
     image: {
       id: Date.now().toString(),
       imageUrl: imagePath,
@@ -71,7 +68,13 @@ export async function uploadPoetry(prevState: any, formData: FormData) {
     comments: [],
   };
 
+  // Write to local JSON for compatibility and to Supabase for dashboard listing
   await addPoetry(newPoetry);
+  try {
+    await insertPoemSupabase(newPoetry);
+  } catch (e) {
+    // swallow if Supabase table not present
+  }
 
   revalidatePath('/');
 
@@ -95,6 +98,12 @@ export async function deletePoetry(poetryId: string) {
     }
   }
 
+  try {
+    await deletePoemSupabase(poetryId);
+  } catch (e) {
+    // swallow
+  }
+
   revalidatePath('/');
 }
 
@@ -104,11 +113,11 @@ export async function likePoetry(poetryId: string, user: UserInfo, isLiked: bool
 }
 
 export async function addComment(poetryId: string, comment: string, user: UserInfo) {
-  await addCommentToPoetry(poetryId, comment, user);
+  await addCommentSupabase(poetryId, comment, user);
   revalidatePath('/');
 }
 
 export async function deleteComment(poetryId: string, commentId: string) {
-  await deleteCommentFromPoetry(poetryId, commentId);
+  await deleteCommentSupabase(poetryId, commentId);
   revalidatePath('/');
 }
