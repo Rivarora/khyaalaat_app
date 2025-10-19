@@ -7,6 +7,7 @@ import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import { addPoetry, deletePoetryById, updatePoetryLikes } from './data';
 import { addCommentSupabase, deleteCommentSupabase, insertPoemSupabase, deletePoemSupabase } from './supabasePoems';
+import { supabase } from './supabaseClient';
 import type { Poetry, UserInfo } from './definitions';
 
 const uploadSchema = z.object({
@@ -40,17 +41,26 @@ export async function uploadPoetry(prevState: any, formData: FormData) {
 
   const buffer = Buffer.from(await image.arrayBuffer());
   const filename = `${Date.now()}-${image.name}`;
-  const uploadDir = join(process.cwd(), 'public', 'uploads');
-  const imagePath = `/uploads/${filename}`;
-  const fullPath = join(uploadDir, filename);
+  
+  // Upload to Supabase Storage (persists across deployments)
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from('poems')
+    .upload(filename, buffer, {
+      contentType: image.type,
+      cacheControl: '3600',
+    });
 
-  try {
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(fullPath, buffer);
-  } catch (error) {
-    console.error('Failed to write file:', error);
-    return { message: 'Error: Could not save image.' };
+  if (uploadError) {
+    console.error('Supabase upload error:', uploadError);
+    return { message: 'Error: Could not save image to storage.' };
   }
+
+  // Get public URL
+  const { data: { publicUrl } } = supabase.storage
+    .from('poems')
+    .getPublicUrl(filename);
+
+  const imagePath = publicUrl;
 
   const newPoetry: Poetry = {
     id: Date.now().toString(),
